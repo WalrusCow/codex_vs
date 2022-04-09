@@ -163,8 +163,7 @@ def _ms_to_str(ms):
     return '{}:{}.{}'.format(mins, secs, millis)
 
 
-def _print_fights(report_code):
-    wcl = WclReport(report_code)
+def _print_fights(wcl):
     fights_res = wcl.list_fights()
     for fight in fights_res['fights']:
         fight_name = fight['name']
@@ -181,17 +180,38 @@ def _print_fights(report_code):
     pass
 
 
-def _print_players(report_code, fight):
-    wcl = WclReport(report_code)
-    players = wcl.list_players(fight)
+def _select_fight(wcl):
+    _print_fights(wcl)
+    try:
+        fight_id = int(input('Select fight: '))
+    except ValueError:
+        raise Exception('fight must be an integer')
+    return fight_id
+
+
+def _print_players(wcl, fight_id):
+    if fight_id is None:
+        fight_id = _select_fight(wcl)
+
+    players = wcl.list_players(fight_id)
     def _player_str(p):
         return f'{p["id"]}: {p["role"].upper()}: {p["name"]}-{p["server"]}: {p["type"]}'
+
     for p in players:
         print(_player_str(p))
 
 
-def _print_events(report_code, fight_id, player_arg):
-    wcl = WclReport(report_code)
+def _select_player(wcl, fight_id):
+    _print_players(wcl, fight_id)
+    return input('Select player: ')
+
+
+def _print_events(wcl, fight_id, player_arg):
+    if fight_id is None:
+        fight_id = _select_fight(wcl)
+    if player_arg is None:
+        player_arg = _select_player(wcl, fight_id)
+
     player_id = None
     try:
         player_id = int(player_arg)
@@ -240,9 +260,9 @@ if __name__ == '__main__':
     )
 
     if args.action == 'fights':
-        _print_fights(args.code)
+        _print_fights(WclReport(args.code))
     if args.action == 'players':
-        _print_players(args.code, args.fight)
+        _print_players(WclReport(args.code), args.fight)
     if args.action == 'events':
-        _print_events(args.code, args.fight, args.player)
+        _print_events(WclReport(args.code), args.fight, args.player)
 
