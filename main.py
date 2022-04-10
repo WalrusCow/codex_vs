@@ -1,4 +1,5 @@
 import argparse
+import functools
 import json
 import logging
 import time
@@ -7,8 +8,119 @@ from datetime import datetime, date
 from requests import Request, Session
 
 import secrets
+from str_buff import StrAura, StrBuff, StrBuffType
+from constants import STR_BUFF_LIST, AP_ABILITIES, CODEX_ATTACK
 
 WCL_URL = 'https://www.warcraftlogs.com/api/v2/client'
+
+CODEX_ID = 185836
+
+
+STR_BUFF_MAP = {b.spell_id: b for b in STR_BUFF_LIST}
+
+def _get_base_strength(strength, auras):
+    base_strength = strength
+    for aura in (a for a in auras if a.buff.type == StrBuffType.MUL):
+        base_strength = aura.mixout(base_strength)
+    for aura in (a for a in auras if a.buff.type == StrBuffType.ADD):
+        base_strength = aura.mixout(base_strength)
+    logging.info(
+        f'Got base strength {base_strength} from strength {strength}'
+        f' and {len(auras)} auras.')
+    return base_strength
+
+
+def aura_from_json(a):
+    if a['ability'] not in STR_BUFF_MAP:
+        logging.info(f'Skipping aura {a["name"]}')
+        return None
+    buff = STR_BUFF_MAP[a['ability']]
+    return StrAura(buff, stacks=a.get('stacks', 1))
+
+def aura_from_buff_event(e):
+    if 'abilityGameID' not in e or e['abilityGameID'] not in STR_BUFF_MAP:
+        logging.info(f'Skipping aura {e.get("name",e.get("abilityGameID","unknown"))}')
+        return None
+    buff = STR_BUFF_MAP[e['abilityGameID']]
+    return StrAura(buff, stacks=e.get('stacks', 1))
+
+def _get_auras_from_json(json_auras):
+    return [x for x in (aura_from_json(a) for a in json_auras) if x is not None]
+
+
+def _wep_ilvl_to_dps(ilvl):
+    #TODO lol
+    return 99.3
+
+
+class PlayerAuras():
+    def __init__(self, aura_list):
+        self._aura_map = {a.buff.spell_id: a for a in aura_list}
+
+    def mixout_strength(self, strength):
+        base_strength = strength
+        for aura in (a for a in self._aura_map.values() if a.buff.type == StrBuffType.MUL):
+            base_strength = aura.mixout(base_strength)
+        for aura in (a for a in self._aura_map.values() if a.buff.type == StrBuffType.ADD):
+            base_strength = aura.mixout(base_strength)
+        logging.info(
+            f'Got base strength {base_strength} from strength {strength}'
+            f' and {len(self._aura_map)} auras.'
+        )
+        return base_strength
+
+
+    def mixin_strength(self, strength):
+        total_strength = strength
+        for aura in (a for a in self._aura_map.values() if a.buff.type == StrBuffType.ADD):
+            total_strength = aura.mixin(total_strength)
+        for aura in (a for a in self._aura_map.values() if a.buff.type == StrBuffType.MUL):
+            total_strength = aura.mixin(total_strength)
+        logging.info(
+            f'Got total strength {total_strength} from strength {strength}'
+            f' and {len(self._aura_map)} auras.'
+        )
+        return total_strength
+
+    def __len__(self):
+        return len(self._aura_map)
+
+    def __getitem__(self, key):
+        if isinstance(key, StrAura):
+            key = key.buff.spell_id
+        if isinstance(key, StrBuff):
+            key = key.spell_id
+        return self._aura_map[key]
+
+    def __contains__(self, key):
+        if isinstance(key, StrAura):
+            key = key.buff.spell_id
+        if isinstance(key, StrBuff):
+            key = key.spell_id
+        return key in self._aura_map
+
+    def __delitem__(self, key):
+        if isinstance(key, StrAura):
+            key = key.buff.spell_id
+        if isinstance(key, StrBuff):
+            key = key.spell_id
+        del self._aura_map[key]
+
+    def add(self, aura):
+        if not isinstance(aura, StrAura):
+            raise ValueError(f'Expected StrAura found {type(aura)}')
+        self._aura_map[aura.buff.spell_id] = aura
+
+
+class PlayerState():
+    def __init__(self, base_strength, auras, wep_dps):
+        self.base_strength = base_strength
+        self.auras = auras
+        self.wep_dps = wep_dps
+
+    def get_ap(self):
+        return self.auras.mixin_strength(self.base_strength) + self.wep_dps * 6
+
 
 
 class WclReport():
@@ -17,23 +129,35 @@ class WclReport():
         self._session = Session()
         self.report_code = report_code
 
+
     def query(self, query, **variables):
-        req_body = json.dumps({'query': query, 'variables': variables, 'operationName': None})
+        req_body = json.dumps({
+            'query': query,
+            'variables': variables,
+            'operationName': None,
+        })
         logging.debug('request body is {}'.format(req_body))
         req = Request('POST', WCL_URL, data=req_body)
         req.headers['Authorization'] = 'Bearer {}'.format(self._auth_token)
         req.headers['Accept'] = 'application/json'
         req.headers['Content-Type'] = 'application/json'
 
+        variables = {k: v for k, v in variables.items() if v is not None}
+
         res = self._session.send(self._session.prepare_request(req)).json()
         logging.debug('response is:\n{}'.format(json.dumps(res, indent=2)))
         if 'errors' in res:
-            raise Exception('Response has errors:\n{}'.format(json.dumps(res['errors'], indent=2)))
+            raise Exception('Response has errors:\n{}'.format(
+                json.dumps(res['errors'], indent=2),
+            ))
         if 'data' not in res:
-            raise Exception('Response has no data:\n{}'.format(json.dumps(res, indent=2)))
+            raise Exception('Response has no data:\n{}'.format(
+                json.dumps(res, indent=2)
+            ))
         return res['data']
 
 
+    @functools.lru_cache
     def list_fights(self):
         fights_query = """
          query getFights($report_code: String!) {
@@ -44,14 +168,13 @@ class WclReport():
                  startTime,
                  endTime,
                  id,
-                 difficulty,
-                 keystoneBonus,
                  keystoneLevel,
-                 keystoneTime,
                  name,
-                 rating,
-                 size,
-                 startTime
+                 startTime,
+                 dungeonPulls {
+                   startTime,
+                   endTime,
+                 },
                }
              }
            }
@@ -62,9 +185,22 @@ class WclReport():
         return fights_res['reportData']['report']
 
 
+    def find_fight(self, fight_id):
+        fights = self.list_fights()
+        for fight in fights['fights']:
+            if fight['id'] == fight_id:
+                return fight
+        raise Exception(f'Fight {fight_id} not found')
+
+
+    @functools.lru_cache
     def list_players(self, fight_id):
         players_query = """
-        query getPlayers($report_code: String!, $start_time: Float!, $end_time: Float!) {
+        query getPlayers(
+          $report_code: String!,
+          $start_time: Float!,
+          $end_time: Float!,
+        ) {
           reportData {
             report(code: $report_code) {
               playerDetails (startTime: $start_time, endTime: $end_time),
@@ -75,13 +211,15 @@ class WclReport():
         }
         """
 
-        fights = self.list_fights()
-        for fight in fights['fights']:
-            if fight['id'] == fight_id:
-                start_time = fight['startTime']
-                end_time = fight['endTime']
+        fight = self.find_fight(fight_id)
+        start_time = fight['startTime']
+        end_time = fight['endTime']
 
-        res = self.query(players_query, report_code=self.report_code, start_time=start_time, end_time=end_time)
+        res = self.query(players_query,
+            report_code=self.report_code,
+            start_time=start_time,
+            end_time=end_time,
+        )
         by_role = res['reportData']['report']['playerDetails']['data']['playerDetails']
         player_list = []
         for role, role_str in (('tanks', 'tank'), ('healers', 'healer'), ('dps', 'dps')):
@@ -91,14 +229,22 @@ class WclReport():
         return player_list
 
 
-    def _query_all_events(self, start_time, end_time, fight_id, event_type):
+    def _query_all_events(
+        self,
+        start_time,
+        end_time,
+        fight_id,
+        event_type=None,
+        player_id=None,
+    ):
         events_query = """
         query getEvents(
           $report_code: String!,
           $fight_id: Int!,
           $start_time: Float!,
           $end_time: Float!,
-          $event_type: EventDataType!,
+          $event_type: EventDataType,
+          $player_id: Int,
         ) {
           reportData {
             report(code: $report_code) {
@@ -109,6 +255,8 @@ class WclReport():
                 limit: 10000,
                 translate: false,
                 dataType: $event_type,
+                sourceID: $player_id,
+                includeResources: true,
               ) {
                 data, nextPageTimestamp
               },
@@ -126,34 +274,94 @@ class WclReport():
                 end_time=end_time,
                 fight_id=fight_id,
                 event_type=event_type,
+                player_id=player_id,
             )['reportData']['report']['events']
             events += events_res['data']
             start_time = events_res['nextPageTimestamp']
         return events
 
 
-
-
-    def list_events(self, fight_id, player_id):
+    def get_fight(self, fight_id):
         fights = self.list_fights()
         for fight in fights['fights']:
             if fight['id'] == fight_id:
-                start_time = fight['startTime']
-                end_time = fight['endTime']
+                return fight
+
+
+    def list_events(self, fight_id, player_id):
+        fight = self.get_fight(fight_id)
+        start_time = fight['startTime']
+        end_time = fight['endTime']
 
         events = []
 
         start = time.time()
-        for event_type in ('DamageDone', 'Buffs', 'Debuffs'):
+        for event_type in ('DamageDone', 'Buffs', 'Casts'):
             events += self._query_all_events(
                 start_time=start_time,
                 end_time=end_time,
                 fight_id=fight_id,
                 event_type=event_type,
+                player_id=player_id,
             )
+        events = sorted(events, key=lambda e: e['timestamp'])
         end = time.time()
-        logging.debug(f'Got all {len(events)} events in {end - start}s')
+        logging.info(f'Got all {len(events)} events in {end - start}s')
         return events
+
+
+    def get_initial_player_state(self, fight_id, player_id):
+        fight = self.get_fight(fight_id)
+        start_time = fight['startTime']
+        end_time = fight['endTime']
+
+        events = self._query_all_events(
+            start_time=start_time,
+            end_time=end_time,
+            fight_id=fight_id,
+            event_type='CombatantInfo',
+            player_id=player_id,
+        )
+        if len(events) > 1:
+            logging.warning(
+                f'See {len(events)} CombatantInfo events for player {player_id}.'
+                ' Considering only the first one'
+            )
+
+        player_data = events[0]
+        try:
+            codex_item = next(g for g in player_data['gear'] if g['id'] == CODEX_ID)
+        except StopIteration:
+            raise Exception(
+                f'Player {player_id} is not wearing codex (item id {CODEX_ID}).'
+                f'\nGear is {json.dumps(player_data["gear"], indent=2)}'
+            )
+        # Look at strength
+        auras = PlayerAuras(_get_auras_from_json(player_data['auras']))
+        p = PlayerState(
+            base_strength=auras.mixout_strength(player_data['strength']),
+            auras=auras,
+            wep_dps=_wep_ilvl_to_dps(player_data['gear'][15]['itemLevel']),
+        )
+
+        print(
+            f'Player has {p.base_strength} base strength after'
+            f' removing {len(p.auras)} auras'
+        )
+        return p
+
+        # now we're supposed to look at stats and buffs I suppose
+        # or maybe not.. if you include resources in the graphql then you get
+        # "cast" events which include "attackPower" field in event
+        # if we cache the most recent one of these then we can probably just
+        # use that to determine current AP?
+        # well yes, that would work for that. at least to verify if the AP
+        # multiplier for simc spellData is matching the one we're seeing in live
+        # logs
+        # but since it's not split out into str we can't really figure out how to
+        # calculate AP
+        # TODO: Confirm how AP is calculated from str and mastery
+        # TODO: Begin investigating spellDataDump thing
 
 
 def _ms_to_str(ms):
@@ -206,9 +414,7 @@ def _select_player(wcl, fight_id):
     return input('Select player: ')
 
 
-def _print_events(wcl, fight_id, player_arg):
-    if fight_id is None:
-        fight_id = _select_fight(wcl)
+def _player_arg_to_id(wcl, fight_id, player_arg):
     if player_arg is None:
         player_arg = _select_player(wcl, fight_id)
 
@@ -225,16 +431,24 @@ def _print_events(wcl, fight_id, player_arg):
         if '-' in player_name:
             player_name, player_server = player_name.split('-', 1)
         for p in wcl.list_players(fight_id):
-            logging.debug(f'looking @ player {p}')
             if player_server is not None and p['server'] != player_server:
                 continue
             if p['name'] != player_name:
                 continue
             if isinstance(player_id, int):
-                logging.warning(f'Duplicate player found for {player_arg}. Previous id {player_id}, duplicate {p["id"]}')
+                logging.warning(
+                    f'Duplicate player found for {player_arg}. '
+                    f' Previous id {player_id}, duplicate {p["id"]}'
+                )
             player_id = p['id']
             logging.debug(f'got id {player_id} for {player_arg}')
+    return player_id
 
+
+def _print_events(wcl, fight_id, player_arg):
+    if fight_id is None:
+        fight_id = _select_fight(wcl)
+    player_id = _player_arg_to_id(wcl, fight_id, player_arg)
     events = wcl.list_events(
         fight_id=fight_id,
         player_id=player_id,
@@ -243,13 +457,86 @@ def _print_events(wcl, fight_id, player_arg):
     print(f'Read {len(events)} events')
 
 
+def _is_codex_good(wcl, fight_id, player_arg):
+    if fight_id is None:
+        fight_id = _select_fight(wcl)
+    player_id = _player_arg_to_id(wcl, fight_id, player_arg)
+
+    player_state = wcl.get_initial_player_state(fight_id, player_id)
+    events = wcl.list_events(fight_id, player_id)
+
+    latest_ap = None
+
+    added_strength_damage = 0
+    codex_damage = 0
+
+    for e in events:
+        t = e['type']
+        if t == 'applybuff' or t == 'applybuffstack':
+            aura = aura_from_buff_event(e)
+            if aura is None:
+                # uninteresting aura
+                continue
+            # check if this is actually applied to player
+            if e['abilityGameID'] == 342181 and aura in player_state.auras:
+                    player_state.auras[aura].stacks += 1
+            if e['targetID'] != player_id:
+                continue
+            player_state.auras.add(aura)
+
+        elif t == 'removebuff':
+            aura = aura_from_buff_event(e)
+            if aura is None or e['targetID'] != player_id:
+                continue
+            # just remove the buff yep
+            del player_state.auras[aura]
+
+        elif t == 'damage':
+            damage_done = e['amount'] + e.get('absorbed', 0)
+            if e['abilityGameID'] == CODEX_ATTACK:
+                codex_damage += damage_done
+            elif e['abilityGameID'] in AP_ABILITIES:
+                dmg_coeff = damage_done / latest_ap
+                ap_coeff = latest_ap / player_state.get_ap()
+                player_state.base_strength += 125
+                new_damage = player_state.get_ap() * ap_coeff * dmg_coeff
+                player_state.base_strength -= 125
+                if new_damage < damage_done:
+                    raise Exception(
+                        f'More strength is less dmg? {new_damage} {damage_done}'
+                        f'{ap_coeff} {dmg_coeff} {player_state.get_ap()}'
+                    )
+                added_strength_damage += (new_damage - damage_done)
+
+        elif t == 'cast' and e.get('attackPower', 0) > 0:
+            latest_ap = e['attackPower']
+    added_strength_damage = int(added_strength_damage)
+    effective_codex_damage = codex_damage - added_strength_damage
+
+    fight = wcl.find_fight(fight_id)
+    fight_duration = fight['endTime'] - fight['startTime']
+    codex_dps = effective_codex_damage / fight_duration * 1000
+    combat_time = sum(p['endTime'] - p['startTime'] for p in fight['dungeonPulls'])
+    codex_dps_combat = effective_codex_damage / combat_time * 1000
+    print(
+        f'Codex damage: {codex_damage}'
+        f'\nStrength damage: {added_strength_damage}'
+        f'\nEffective codex damage: {effective_codex_damage}'
+        f'\nEffective codex dps: {codex_dps:.1f}'
+        f'\nEffective codex dps (combat): {codex_dps_combat:.1f}'
+    )
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="toy cli")
-    parser.add_argument('action', type=str, choices=['fights', 'players', 'events'])
+    parser.add_argument('action',
+        type=str,
+        choices=['fights', 'players', 'events', 'codex'],
+    )
     parser.add_argument('code', type=str)
     parser.add_argument('--fight', type=int)
     parser.add_argument('--player', type=str)
-    parser.add_argument('--loglevel', type=str, default='INFO')
+    parser.add_argument('--loglevel', type=str, default='WARNING')
     parser.add_argument('-v', action='store_true')
     args = parser.parse_args()
 
@@ -265,4 +552,6 @@ if __name__ == '__main__':
         _print_players(WclReport(args.code), args.fight)
     if args.action == 'events':
         _print_events(WclReport(args.code), args.fight, args.player)
+    if args.action == 'codex':
+        _is_codex_good(WclReport(args.code), args.fight, args.player)
 
