@@ -7,16 +7,13 @@ from datetime import datetime, date
 
 from requests import Request, Session
 
+import constants as c
 import secrets
 from str_buff import StrAura, StrBuff, StrBuffType
-from constants import STR_BUFF_LIST, AP_ABILITIES, CODEX_ATTACK
 
 WCL_URL = 'https://www.warcraftlogs.com/api/v2/client'
 
-CODEX_ID = 185836
-
-
-STR_BUFF_MAP = {b.spell_id: b for b in STR_BUFF_LIST}
+STR_BUFF_MAP = {b.spell_id: b for b in c.STR_BUFF_LIST}
 
 def _get_base_strength(strength, auras):
     base_strength = strength
@@ -24,7 +21,7 @@ def _get_base_strength(strength, auras):
         base_strength = aura.mixout(base_strength)
     for aura in (a for a in auras if a.buff.type == StrBuffType.ADD):
         base_strength = aura.mixout(base_strength)
-    logging.info(
+    logging.debug(
         f'Got base strength {base_strength} from strength {strength}'
         f' and {len(auras)} auras.')
     return base_strength
@@ -32,14 +29,14 @@ def _get_base_strength(strength, auras):
 
 def aura_from_json(a):
     if a['ability'] not in STR_BUFF_MAP:
-        logging.info(f'Skipping aura {a["name"]}')
+        logging.debug(f'Skipping aura {a["name"]}')
         return None
     buff = STR_BUFF_MAP[a['ability']]
     return StrAura(buff, stacks=a.get('stacks', 1))
 
 def aura_from_buff_event(e):
     if 'abilityGameID' not in e or e['abilityGameID'] not in STR_BUFF_MAP:
-        logging.info(f'Skipping aura {e.get("name",e.get("abilityGameID","unknown"))}')
+        logging.debug(f'Skipping aura {e.get("name",e.get("abilityGameID","unknown"))}')
         return None
     buff = STR_BUFF_MAP[e['abilityGameID']]
     return StrAura(buff, stacks=e.get('stacks', 1))
@@ -63,7 +60,7 @@ class PlayerAuras():
             base_strength = aura.mixout(base_strength)
         for aura in (a for a in self._aura_map.values() if a.buff.type == StrBuffType.ADD):
             base_strength = aura.mixout(base_strength)
-        logging.info(
+        logging.debug(
             f'Got base strength {base_strength} from strength {strength}'
             f' and {len(self._aura_map)} auras.'
         )
@@ -76,7 +73,7 @@ class PlayerAuras():
             total_strength = aura.mixin(total_strength)
         for aura in (a for a in self._aura_map.values() if a.buff.type == StrBuffType.MUL):
             total_strength = aura.mixin(total_strength)
-        logging.info(
+        logging.debug(
             f'Got total strength {total_strength} from strength {strength}'
             f' and {len(self._aura_map)} auras.'
         )
@@ -330,10 +327,10 @@ class WclReport():
 
         player_data = events[0]
         try:
-            codex_item = next(g for g in player_data['gear'] if g['id'] == CODEX_ID)
+            codex_item = next(g for g in player_data['gear'] if g['id'] == c.CODEX_ID)
         except StopIteration:
             raise Exception(
-                f'Player {player_id} is not wearing codex (item id {CODEX_ID}).'
+                f'Player {player_id} is not wearing codex (item id {c.CODEX_ID}).'
                 f'\nGear is {json.dumps(player_data["gear"], indent=2)}'
             )
         # Look at strength
@@ -344,24 +341,11 @@ class WclReport():
             wep_dps=_wep_ilvl_to_dps(player_data['gear'][15]['itemLevel']),
         )
 
-        print(
+        logging.info(
             f'Player has {p.base_strength} base strength after'
             f' removing {len(p.auras)} auras'
         )
         return p
-
-        # now we're supposed to look at stats and buffs I suppose
-        # or maybe not.. if you include resources in the graphql then you get
-        # "cast" events which include "attackPower" field in event
-        # if we cache the most recent one of these then we can probably just
-        # use that to determine current AP?
-        # well yes, that would work for that. at least to verify if the AP
-        # multiplier for simc spellData is matching the one we're seeing in live
-        # logs
-        # but since it's not split out into str we can't really figure out how to
-        # calculate AP
-        # TODO: Confirm how AP is calculated from str and mastery
-        # TODO: Begin investigating spellDataDump thing
 
 
 def _ms_to_str(ms):
@@ -493,9 +477,9 @@ def _is_codex_good(wcl, fight_id, player_arg):
 
         elif t == 'damage':
             damage_done = e['amount'] + e.get('absorbed', 0)
-            if e['abilityGameID'] == CODEX_ATTACK:
+            if e['abilityGameID'] == c.CODEX_ATTACK:
                 codex_damage += damage_done
-            elif e['abilityGameID'] in AP_ABILITIES:
+            elif e['abilityGameID'] in c.AP_ABILITIES:
                 dmg_coeff = damage_done / latest_ap
                 ap_coeff = latest_ap / player_state.get_ap()
                 player_state.base_strength += 125
