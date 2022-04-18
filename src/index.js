@@ -37,25 +37,22 @@ class AuthButton extends React.Component {
   }
 
   async getAccessToken(code) {
-    let xhr = new XMLHttpRequest();
-    xhr.onload = function() {
-      let response = xhr.response;
-      if (xhr.status != 200) {
-        console.log(`Error trying to get access token: ${response.error}. ${response.message}`);
-      }
-      window.sessionStorage.setItem('auth_token', response.access_token);
-      console.log('response is ', response);
-    };
-    xhr.responseType = 'json';
-    xhr.open('POST', wcl_tok_uri, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send(new URLSearchParams({
-      client_id: wcl_client_id,
-      code_verifier: window.sessionStorage.getItem('verifier'),
-      redirect_uri: redirect_uri,
-      grant_type: 'authorization_code',
-      code: code,
-    }));
+    const response = await fetch(wcl_tok_uri, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      body: new URLSearchParams({
+        client_id: wcl_client_id,
+        code_verifier: window.sessionStorage.getItem('verifier'),
+        redirect_uri: redirect_uri,
+        grant_type: 'authorization_code',
+        code: code,
+      }),
+    });
+
+    const j = await response.json();
+    window.sessionStorage.setItem('auth_token', j.access_token);
+    return j.access_token;
   }
 
   async flub() {
