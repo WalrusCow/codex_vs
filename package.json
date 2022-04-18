@@ -1,0 +1,28 @@
+{
+  "name": "codex_vs",
+  "version": "1.0.0",
+  "description": "Look at a log and see if Codex did good damage, compared to wearing a strength trinket",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/walruscow/codex_vs.git"
+  },
+  "keywords": [],
+  "author": "walruscow",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/walruscow/codex_vs/issues"
+  },
+  "homepage": "https://walruscow.github.io/codex_vs/",
+  "babel": {
+    "presets": ["@babel/preset-react"]
+  },
+  "devDependencies": {
+    "@babel/cli": "7.17.6",
+    "@babel/preset-env": "7.16.11",
+    "@babel/preset-react": "^7.16.7"
+  }
+}
