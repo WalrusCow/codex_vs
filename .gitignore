@@ -1,4 +1,5 @@
 secrets.py
+auto_build.sh
 *.swp
 .venv
 __pycache__
