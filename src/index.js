@@ -2,9 +2,10 @@
 
 import * as auth from './auth.js';
 
+const codex_id = 185836;
 const wcl_api = 'https://www.warcraftlogs.com/api/v2/client'
 
-function parseReportUrl(url) {
+function parse_report_url(url) {
   let result = {
     report_id: null,
     fight_id: null,
@@ -22,9 +23,8 @@ function parseReportUrl(url) {
   if (url.hash) {
     // Strip leading # from hash
     let params = new URLSearchParams(url.hash.substr(1));
-    // TODO: Will have to special case handle "last" later
     result.fight_id = params.get('fight');
-    if (result.fight_id) {
+    if (result.fight_id && result.fight_id != 'last') {
       result.fight_id = parseInt(result.fight_id);
     }
   }
@@ -52,6 +52,54 @@ async function wcl_query(auth_token, query, vars) {
     throw new Error(`error querying WCL API: ${res.status}`);
   }
   return json_body.data;
+}
+
+async function query_all_events(auth_token, report_id, fight, event_type, player_id=null) {
+  // TODO
+  const query = `
+    query getEvents(
+      $report_id: String!,
+      $fight_id: Int!,
+      $start_time: Float!,
+      $end_time: Float!,
+      $event_type: EventDataType,
+      $player_id: Int,
+    ) {
+      reportData {
+        report(code: $report_id) {
+          events (
+            fightIDs: [$fight_id],
+            startTime: $start_time,
+            endTime: $end_time,
+            limit: 10000,
+            translate: false,
+            dataType: $event_type,
+            sourceID: $player_id,
+            includeResources: true,
+          ) {
+            data, nextPageTimestamp
+          },
+        },
+      }
+    }
+  `;
+
+  events = [];
+  let query_start = fight.start_time;
+  while (query_start) {
+    const res = await wcl_query(auth_token, query, {
+      report_id: report_id,
+      fight_id: fight.id,
+      start_time: query_start,
+      end_time: fight.end_time,
+      event_type: event_type,
+      player_id: player_id,
+    });
+    const new_events = res.reportData.report.events;
+    events = events.concat(new_events.data);
+    query_start = new_events.nextPageTimestamp;
+  }
+  return events;
 }
 
 async function list_fights(auth_token, report_id) {
@@ -85,6 +133,26 @@ async function list_fights(auth_token, report_id) {
     fight.date = new Date(report_start + fight.startTime);
   }
   return response.reportData.report.fights;
+}
+
+async function analyze_codex(auth_token, report_id, fight, player_data) {
+  let result = {
+    codex_damage: null,
+    strength_trinket_damage: null,
+  };
+  return result;
+}
+
+async function list_codex_players(auth_token, report_id, fight) {
+  let result = [];
+  const player_infos = await query_all_events(auth_token, report_id, fight, 'CombatantInfo');
+  for (var player of player_infos) {
+    // filter down to players wearing codex
+    if (!player.gear.some((item) => item.id == codex_id)) {
+      continue;
+    }
+    console.log(`player id ${player.id} is wearig codex`);
+  }
 }
 
 function FightItem(props) {
@@ -180,36 +248,38 @@ class CodexApp extends React.Component {
   selectFight(e) {
     console.log(`setting state to be ${parseInt(e.target.value)}`);
     this.setState({fight_id: parseInt(e.target.value)});
+    // get player info
+
   }
 
   handleReportInput(e) {
-    let drill_state = {
-      report_id: null,
-      fight_id: null,
-    };
+    let report_id = null;
+    let fight_id = null;
     if (!e.target.value) {
       return;
     }
     if (e.target.value.includes('warcraftlogs.com')) {
-      drill_state = parseReportUrl(e.target.value);
+      ({report_id, fight_id} = parse_report_url(e.target.value));
     } else {
-      drill_state.report_id = e.target.value;
+      report_id = e.target.value;
     }
 
-    if (!drill_state.report_id) {
+    if (!report_id) {
       // Nothing to do with no possibly-legit report id
       return;
     }
 
     this.setState({
-      report_id: drill_state.report_id,
-      fight_id: drill_state.fight_id,
+      report_id: report_id,
     });
 
     list_fights(
-      this.props.auth_token, drill_state.report_id,
+      this.props.auth_token, report_id,
     ).then(
-      (fights) => this.setState({fights: fights})
+      (fights) => this.setState({
+        fights: fights,
+        fight_id: fight_id == 'last' ? fights.at(-1).id : fight_id,
+      })
     ).catch(
       (err) => console.log(err)
     );
