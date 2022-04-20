@@ -68,8 +68,8 @@ async function getAuthToken(code) {
 
 
   let params = new URLSearchParams(window.location.search);
-  params.delete('code'); //history.replaceState({}, '', window.location.origin + window.location.pathname + params)
-
+  params.delete('code');
+  history.replaceState({}, '', window.location.origin + window.location.pathname + params);
   return j.access_token;
 }
 

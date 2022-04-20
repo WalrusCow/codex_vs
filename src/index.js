@@ -24,6 +24,9 @@ function parseReportUrl(url) {
     let params = new URLSearchParams(url.hash.substr(1));
     // TODO: Will have to special case handle "last" later
     result.fight_id = params.get('fight');
+    if (result.fight_id) {
+      result.fight_id = parseInt(result.fight_id);
+    }
   }
   return result;
 }
@@ -101,7 +104,14 @@ function FightItem(props) {
   const id_str = `fight_${f.id}`;
   return (
     <li>
-      <input type='radio' id={id_str} name='fight' value={f.id} onClick={props.clickFight}/>
+      <input
+        type='radio'
+        id={id_str}
+        name='fight'
+        value={f.id}
+        onClick={props.clickFight}
+        checked={props.selected}
+      />
       <label for={id_str}>{f.name} {duration_str} ({date_str})</label>
     </li>
   );
@@ -111,7 +121,12 @@ function FightsList(props) {
   return (
     <ul>{
       props.fights.map((f) =>
-        <FightItem fight={f} key={f.id} clickFight={props.clickFight}/>
+        <FightItem
+          fight={f}
+          key={f.id}
+          clickFight={props.clickFight}
+          selected={props.selected_fight === f.id}
+        />
       )
     }
     </ul>
@@ -141,6 +156,7 @@ class CodexApp extends React.Component {
       fights_list = <FightsList
         fights={this.state.fights}
         clickFight={(e) => this.selectFight(e)}
+        selected_fight={this.state.fight_id}
       />;
     }
 

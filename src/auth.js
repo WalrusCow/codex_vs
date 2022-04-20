@@ -69,7 +69,7 @@ async function getAuthToken(code) {
   // Remove code from url, so that it's safely copyable
   let params = new URLSearchParams(window.location.search);
   params.delete('code');
-  //history.replaceState({}, '', window.location.origin + window.location.pathname + params)
+  history.replaceState({}, '', window.location.origin + window.location.pathname + params)
   return j.access_token;
 }
 

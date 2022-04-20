@@ -26,6 +26,10 @@ function parseReportUrl(url) {
     let params = new URLSearchParams(url.hash.substr(1)); // TODO: Will have to special case handle "last" later
 
     result.fight_id = params.get('fight');
+
+    if (result.fight_id) {
+      result.fight_id = parseInt(result.fight_id);
+    }
   }
 
   return result;
@@ -114,7 +118,8 @@ function FightItem(props) {
     id: id_str,
     name: "fight",
     value: f.id,
-    onClick: props.clickFight
+    onClick: props.clickFight,
+    checked: props.selected
   }), /*#__PURE__*/React.createElement("label", {
     for: id_str
   }, f.name, " ", duration_str, " (", date_str, ")"));
@@ -124,7 +129,8 @@ function FightsList(props) {
   return /*#__PURE__*/React.createElement("ul", null, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
     fight: f,
     key: f.id,
-    clickFight: props.clickFight
+    clickFight: props.clickFight,
+    selected: props.selected_fight === f.id
   })));
 }
 
@@ -151,7 +157,8 @@ class CodexApp extends React.Component {
     if (this.state.fights) {
       fights_list = /*#__PURE__*/React.createElement(FightsList, {
         fights: this.state.fights,
-        clickFight: e => this.selectFight(e)
+        clickFight: e => this.selectFight(e),
+        selected_fight: this.state.fight_id
       });
     }
 
