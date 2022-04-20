@@ -4,3 +4,4 @@ auto_build.sh
 .venv
 __pycache__
 node_modules
+localhost.pem

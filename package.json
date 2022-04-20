@@ -4,7 +4,8 @@
   "description": "Look at a log and see if Codex did good damage, compared to wearing a strength trinket",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bash dev.sh"
   },
   "repository": {
     "type": "git",
