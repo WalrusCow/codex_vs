@@ -9,19 +9,16 @@ const wcl_api = 'https://www.warcraftlogs.com/api/v2/client'
 async function s256(codeVerifier) {
   const digest = await crypto.subtle.digest('SHA-256',
       new TextEncoder().encode(codeVerifier));
-
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
       .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
 }
 
 function generateRandomString(length) {
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-~.';
-
   let text = '';
   for (var i = 0; i < length; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
-
   return text;
 }
 
@@ -40,7 +37,6 @@ function parseReportUrl(url) {
   let result = {
     report_id: null,
     fight_id: null,
-    player_id: null,
   };
   try {
     url = new URL(url);
@@ -57,7 +53,6 @@ function parseReportUrl(url) {
     let params = new URLSearchParams(url.hash.substr(1));
     // TODO: Will have to special case handle "last" later
     result.fight_id = params.get('fight');
-    // TODO: result.player_id = params.get('source');
   }
   return result;
 }
@@ -110,7 +105,50 @@ async function list_fights(auth_token, report_id) {
   const response = await wcl_query(auth_token, query, {
     report_id: report_id,
   });
-  return response.reportData.report;
+  // TODO: Map this to change times to absolute times / dates
+  const report_start = response.reportData.report.startTime;
+  for (var fight of response.reportData.report.fights) {
+    fight.date = new Date(report_start + fight.startTime);
+  }
+  return response.reportData.report.fights;
+}
+
+function FightItem(props) {
+  const f = props.fight;
+  const duration_str = (function() {
+    const dur_s = Math.floor((f.endTime - f.startTime) / 1000);
+    const secs = (Math.floor(dur_s) % 60).toString().padStart(2, '0');
+    const mins = (Math.floor(dur_s / 60)).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  })();
+
+  // 2022-04-19, 20:25
+  const date_str = f.date.toLocaleString('en-CA', {
+    timeStyle: 'short', dateStyle: 'short', hour12: false,
+  });
+
+  const id_str = `fight_${f.id}`;
+  return (
+    <li>
+      <input type='radio' id={id_str} name='fight' value={f.id} onClick={props.clickFight}/>
+      <label for={id_str}>{f.name} {duration_str} ({date_str})</label>
+    </li>
+  );
+}
+
+function FightsList(props) {
+  return (
+    <ul>{
+      props.fights.map((f) =>
+        <FightItem fight={f} key={f.id} clickFight={props.clickFight}/>
+      )
+    }
+    </ul>
+  );
+}
+
+function AnalysisResults(props) {
+  return <div>Results!</div>;
 }
 
 class CodexApp extends React.Component {
@@ -118,32 +156,49 @@ class CodexApp extends React.Component {
     super(props);
     this.state = {
       fights: null,
-      drill_state: {
-        report_id: null,
-        fight_id: null,
-        player_id: null,
-      },
+      report_id: null,
+      fight_id: null,
+      analysis_results: null,
     };
   }
+
   render() {
     // what to do here? well, I guess we can now get the latest reports even.
     // for now, let's just render a text box I guess?
+    let fights_list = null;
     if (this.state.fights) {
-      return 'fights lol';
+      fights_list = <FightsList
+        fights={this.state.fights}
+        clickFight={(e) => this.selectFight(e)}
+      />;
     }
+
+    let analysis_results = null;
+    if (this.state.analysis_results) {
+      analysis_results = <AnalysisResults />
+    } else if (this.state.fight_id) {
+      analysis_results = <div id='loading'>Loading...</div>
+    }
+
     return (
       <div>
         <label for='report'>Enter a report ID or paste a URL:</label>
         <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
+        {fights_list}
+        {analysis_results}
       </div>
     );
+  }
+
+  selectFight(e) {
+    console.log(`setting state to be ${parseInt(e.target.value)}`);
+    this.setState({fight_id: parseInt(e.target.value)});
   }
 
   handleReportInput(e) {
     let drill_state = {
       report_id: null,
       fight_id: null,
-      player_id: null,
     };
     if (!e.target.value) {
       return;
@@ -155,11 +210,14 @@ class CodexApp extends React.Component {
     }
 
     if (!drill_state.report_id) {
-      // Nothing to do with no legit report id
+      // Nothing to do with no possibly-legit report id
       return;
     }
 
-    this.setState({drill_state: drill_state});
+    this.setState({
+      report_id: drill_state.report_id,
+      fight_id: drill_state.fight_id,
+    });
 
     list_fights(
       this.props.auth_token, drill_state.report_id,
