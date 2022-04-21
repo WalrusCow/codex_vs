@@ -45,18 +45,35 @@ function PlayerList(props) {
 }
 
 function PlayerAnalysis(props) {
-  // no data yet means we're loading it
+  // no data yet means we're loading it.. or maybe it means this isn't supported?
   if (!props.analysis) {
     return <div>Loading!</div>;
   }
-  return <div>Analysis here!</div>;
+  if (props.analysis.error) {
+    return <div>{props.analysis.error}</div>;
+  }
+  let value_text = 'Weak for Codex';
+  const dps_diff = props.analysis.trinket_dps - props.analysis.codex_dps;
+  if (Math.abs(dps_diff) < (props.analysis.trinket_dps * 0.1)) {
+    value_text = 'Okay for Codex';
+  } else if (dps_diff < 0) {
+    value_text = 'Strong for Codex';
+  }
+  return (
+    <div>
+      <p><strong>{value_text}</strong></p>
+      <p>Codex dps: {props.analysis.codex_dps}</p>
+      <p>Codex damage: {props.analysis.codex_dmg}</p>
+      <p>Strength damage: {props.analysis.str_dmg}</p>
+    </div>
+  );
 }
 
 function PlayerCard(props) {
   return (
     <div>
       <div>{props.player.name}-{props.player.server}: {props.player.type}</div>
-      <PlayerAnalysis aa={props.analysis} />
+      <PlayerAnalysis analysis={props.analysis} />
     </div>
   );
 }
@@ -131,7 +148,7 @@ class CodexApp extends React.Component {
       fights_list = <FightList
         fights={this.state.fights}
         clickFight={(f) => this.set_fight(f)}
-        selected_fight={this.state.fight.id}
+        selected_fight={this.state.fight && this.state.fight.id}
       />;
     }
 
@@ -160,15 +177,9 @@ class CodexApp extends React.Component {
       fight: fight,
       // clear old players while new ones load
       players: null,
+      analysis: null,
     });
 
-    // TODO: To support "Loading..." then we could also store a var like
-    // Loading<Promise<Players>>
-    // and then pass that variable into PlayerList<> Component
-    // then PlayerList can check if (this.props.loading_list.loaded())
-    // and use this.props.loading_list.data
-    // ... and have loading_list.on_load(...) to call setState(as a no-op? or with a real thing)
-    // ... could have a "name" for this loader. or use object id guuid thing?
     const players = await wcl.list_players(
       this.props.auth_token,
       this.state.report_id,
@@ -192,6 +203,7 @@ class CodexApp extends React.Component {
       if (s.fight.id == fight.id) {
         s.analysis = analysis;
       }
+      return s;
     });
   }
 

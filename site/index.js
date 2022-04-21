@@ -51,17 +51,30 @@ function PlayerList(props) {
 }
 
 function PlayerAnalysis(props) {
-  // no data yet means we're loading it
+  // no data yet means we're loading it.. or maybe it means this isn't supported?
   if (!props.analysis) {
     return /*#__PURE__*/React.createElement("div", null, "Loading!");
   }
 
-  return /*#__PURE__*/React.createElement("div", null, "Analysis here!");
+  if (props.analysis.error) {
+    return /*#__PURE__*/React.createElement("div", null, props.analysis.error);
+  }
+
+  let value_text = 'Weak for Codex';
+  const dps_diff = props.analysis.trinket_dps - props.analysis.codex_dps;
+
+  if (Math.abs(dps_diff) < props.analysis.trinket_dps * 0.1) {
+    value_text = 'Okay for Codex';
+  } else if (dps_diff < 0) {
+    value_text = 'Strong for Codex';
+  }
+
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, value_text)), /*#__PURE__*/React.createElement("p", null, "Codex dps: ", props.analysis.codex_dps), /*#__PURE__*/React.createElement("p", null, "Codex damage: ", props.analysis.codex_dmg), /*#__PURE__*/React.createElement("p", null, "Strength damage: ", props.analysis.str_dmg));
 }
 
 function PlayerCard(props) {
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, props.player.name, "-", props.player.server, ": ", props.player.type), /*#__PURE__*/React.createElement(PlayerAnalysis, {
-    aa: props.analysis
+    analysis: props.analysis
   }));
 }
 
@@ -128,7 +141,7 @@ class CodexApp extends React.Component {
       fights_list = /*#__PURE__*/React.createElement(FightList, {
         fights: this.state.fights,
         clickFight: f => this.set_fight(f),
-        selected_fight: this.state.fight.id
+        selected_fight: this.state.fight && this.state.fight.id
       });
     }
 
@@ -159,15 +172,9 @@ class CodexApp extends React.Component {
     this.setState({
       fight: fight,
       // clear old players while new ones load
-      players: null
-    }); // TODO: To support "Loading..." then we could also store a var like
-    // Loading<Promise<Players>>
-    // and then pass that variable into PlayerList<> Component
-    // then PlayerList can check if (this.props.loading_list.loaded())
-    // and use this.props.loading_list.data
-    // ... and have loading_list.on_load(...) to call setState(as a no-op? or with a real thing)
-    // ... could have a "name" for this loader. or use object id guuid thing?
-
+      players: null,
+      analysis: null
+    });
     const players = await wcl.list_players(this.props.auth_token, this.state.report_id, fight);
     this.setState(function (s) {
       if (s.fight.id == fight.id) {
@@ -182,6 +189,8 @@ class CodexApp extends React.Component {
       if (s.fight.id == fight.id) {
         s.analysis = analysis;
       }
+
+      return s;
     });
   }
 

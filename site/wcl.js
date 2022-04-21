@@ -29,7 +29,6 @@ async function wcl_query(auth_token, query, vars) {
 }
 
 async function query_all_events(auth_token, report_id, fight, event_type, player_id = null) {
-  // TODO
   const query = `
     query getEvents(
       $report_id: String!,
@@ -58,14 +57,14 @@ async function query_all_events(auth_token, report_id, fight, event_type, player
     }
   `;
   let events = [];
-  let query_start = fight.start_time;
+  let query_start = fight.startTime;
 
   while (query_start) {
     const res = await wcl_query(auth_token, query, {
       report_id: report_id,
       fight_id: fight.id,
       start_time: query_start,
-      end_time: fight.end_time,
+      end_time: fight.endTime,
       event_type: event_type,
       player_id: player_id
     });
@@ -134,14 +133,12 @@ async function list_players(auth_token, report_id, fight) {
   });
   player_list = player_list.reportData.report.playerDetails.data.playerDetails;
   player_list = Array.prototype.concat(...Object.values(player_list));
-  let result = [];
   const combat_infos = await query_all_events(auth_token, report_id, fight, 'CombatantInfo');
 
   for (var combat_info of combat_infos) {
     // find matching player info and add the combat info
-    let player = player_list.find(p => p.id == combat_info.id);
+    let player = player_list.find(p => p.id == combat_info.sourceID);
     player.combat_info = combat_info;
-    player.has_codex = !combat_info.gear.some(item => item.id == codex_id);
   }
 
   return player_list;
