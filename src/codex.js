@@ -6,7 +6,8 @@ import * as wcl from './wcl.js';
 const codex_id = 185836;
 const codex_attack = 351450;
 
-const passive_trinket_dps = 350;
+// based off 272 phial @10% vers
+const passive_trinket_dps = 460;
 const trinket_str_278 = 125;
 
 class Aura {

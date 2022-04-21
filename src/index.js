@@ -62,7 +62,8 @@ function PlayerAnalysis(props) {
   return (
     <div>
       <p><strong>{value_text}</strong></p>
-      <p>Codex dps: {props.analysis.codex_dps}</p>
+      <p>Effective codex dps: {props.analysis.codex_dps}</p>
+      <p>Passive trinket dps: {props.analysis.trinket_dps}</p>
       <p>Codex damage: {props.analysis.codex_dmg}</p>
       <p>Strength damage: {props.analysis.str_dmg}</p>
     </div>

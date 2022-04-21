@@ -69,7 +69,7 @@ function PlayerAnalysis(props) {
     value_text = 'Strong for Codex';
   }
 
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, value_text)), /*#__PURE__*/React.createElement("p", null, "Codex dps: ", props.analysis.codex_dps), /*#__PURE__*/React.createElement("p", null, "Codex damage: ", props.analysis.codex_dmg), /*#__PURE__*/React.createElement("p", null, "Strength damage: ", props.analysis.str_dmg));
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, value_text)), /*#__PURE__*/React.createElement("p", null, "Effective codex dps: ", props.analysis.codex_dps), /*#__PURE__*/React.createElement("p", null, "Passive trinket dps: ", props.analysis.trinket_dps), /*#__PURE__*/React.createElement("p", null, "Codex damage: ", props.analysis.codex_dmg), /*#__PURE__*/React.createElement("p", null, "Strength damage: ", props.analysis.str_dmg));
 }
 
 function PlayerCard(props) {
