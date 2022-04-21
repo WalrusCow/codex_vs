@@ -1,17 +1,9 @@
-# Is Codex any good?
+# When is Codex the right choice?
 
-This is a script that looks at a log and tries to say if Codex did good damage, compared to wearing a strength trinket
+This is a script that looks at a log and tries to say if Codex did good damage,
+compared to what a passive dps trinket with strength would do.
 
-```
-$ python main.py codex AxQzK6fZHdT1y2wD --fight 1 --player Demorgan
-Codex damage: 528678
-Strength damage: 439900
-Effective codex damage: 88778
-Effective codex dps: 49.4
-Effective codex dps (combat): 62.2
-```
-
-Currently rewriting it as a JS app to run on GH pages
+Hosted on Github pages: https://walruscow.github.io/codex_vs/
 
 # Developing
 
