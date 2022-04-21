@@ -87,7 +87,7 @@ function FightItem(props) {
     id: id_str,
     name: "fight",
     value: f.id,
-    onClick: props.clickFight,
+    onClick: () => props.clickFight(f),
     checked: props.selected
   }), /*#__PURE__*/React.createElement("label", {
     for: id_str
@@ -113,7 +113,7 @@ class CodexApp extends React.Component {
     this.state = {
       fights: null,
       report_id: null,
-      fight_id: null,
+      fight: null,
       players: null,
       analysis: null
     };
@@ -127,8 +127,8 @@ class CodexApp extends React.Component {
     if (this.state.fights) {
       fights_list = /*#__PURE__*/React.createElement(FightList, {
         fights: this.state.fights,
-        clickFight: e => this.select_fight(e),
-        selected_fight: this.state.fight_id
+        clickFight: f => this.set_fight(f),
+        selected_fight: this.state.fight.id
       });
     }
 
@@ -155,10 +155,9 @@ class CodexApp extends React.Component {
     }), fights_list, player_list);
   }
 
-  async select_fight(e) {
-    let new_fight_id = parseInt(e.target.value);
+  async set_fight(fight) {
     this.setState({
-      fight_id: new_fight_id,
+      fight: fight,
       // clear old players while new ones load
       players: null
     }); // TODO: To support "Loading..." then we could also store a var like
@@ -169,10 +168,9 @@ class CodexApp extends React.Component {
     // ... and have loading_list.on_load(...) to call setState(as a no-op? or with a real thing)
     // ... could have a "name" for this loader. or use object id guuid thing?
 
-    const fight = this.state.fights.find(f => f.id == new_fight_id);
     const players = await wcl.list_players(this.props.auth_token, this.state.report_id, fight);
     this.setState(function (s) {
-      if (s.fight_id == new_fight_id) {
+      if (s.fight.id == fight.id) {
         s.players = players;
       }
 
@@ -181,13 +179,13 @@ class CodexApp extends React.Component {
 
     const analysis = await codex.analyze_players(this.props.auth_token, this.state.report_id, fight, players);
     this.setState(function (s) {
-      if (s.fight_id == new_fight_id) {
+      if (s.fight.id == fight.id) {
         s.analysis = analysis;
       }
     });
   }
 
-  handleReportInput(e) {
+  async handleReportInput(e) {
     let report_id = null;
     let fight_id = null;
 
@@ -212,10 +210,14 @@ class CodexApp extends React.Component {
     this.setState({
       report_id: report_id
     });
-    wcl.list_fights(this.props.auth_token, report_id).then(fights => this.setState({
-      fights: fights,
-      fight_id: fight_id == 'last' ? fights.at(-1).id : fight_id
-    })).catch(err => console.log(err));
+    const fights = await wcl.list_fights(this.props.auth_token, report_id);
+    this.setState({
+      fights: fights
+    });
+
+    if (fight_id) {
+      this.set_fight(fights.at(fight_id == 'last' ? -1 : fight_id));
+    }
   }
 
 }
