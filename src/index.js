@@ -84,7 +84,7 @@ async function query_all_events(auth_token, report_id, fight, event_type, player
     }
   `;
 
-  events = [];
+  let events = [];
   let query_start = fight.start_time;
   while (query_start) {
     const res = await wcl_query(auth_token, query, {
@@ -127,7 +127,6 @@ async function list_fights(auth_token, report_id) {
   const response = await wcl_query(auth_token, query, {
     report_id: report_id,
   });
-  // TODO: Map this to change times to absolute times / dates
   const report_start = response.reportData.report.startTime;
   for (var fight of response.reportData.report.fights) {
     fight.date = new Date(report_start + fight.startTime);
@@ -143,16 +142,125 @@ async function analyze_codex(auth_token, report_id, fight, player_data) {
   return result;
 }
 
-async function list_codex_players(auth_token, report_id, fight) {
-  let result = [];
-  const player_infos = await query_all_events(auth_token, report_id, fight, 'CombatantInfo');
-  for (var player of player_infos) {
-    // filter down to players wearing codex
-    if (!player.gear.some((item) => item.id == codex_id)) {
-      continue;
+// TODO: food for thought.. are there background JS worker things we can take
+// advantage of to do this heavy lifting?
+//
+// TODO: We don't really want this exactly. probably we just want to show every
+// player and then under them show the stats about codex (yes, this)
+//
+// so this function should be 2 parts.. one to actually call list_players from
+// python impl. then after we fetch combatantinfo and merge it together into one
+// unseemly beast
+//
+// then separately we'll have a stateful class constructed from that data
+// that will be used to process the events
+//  class Player // name, is_codex, player_id, server, etc
+//  class PlayerAnalyzer // Player, combat_events -> getCodexStats
+//
+// to start with, the stats will be "not wearing codex"
+// in the future, "simulated codex dps" will be a part of it too
+//
+// if wearing codex
+//  Strength dps (damage) (estimated)
+//  Codex dps (damage)
+//  Passive trinket dps (benchmark, not actual data)
+//  Verdict: WORTH / NOT WORTH
+// or, if not wearing codex
+//  Strength dps (damage)
+//  Codex dps (damage) (estimated)
+//  Trinket dps (benchmark, not actual data)
+//  Verdict: WORTH / NOT WORTH
+// TODO: eventually also consider
+//  what if I upgraded codex?
+//  did codex save life?
+//  select trinket ilvl
+async function list_players(auth_token, report_id, fight) {
+  const players_query = `
+    query getPlayers(
+      $report_id: String!,
+      $start_time: Float!,
+      $end_time: Float!,
+    ) {
+      reportData {
+        report(code: $report_id) {
+          playerDetails (startTime: $start_time, endTime: $end_time),
+          title,
+          visibility,
+        }
+      }
     }
-    console.log(`player id ${player.id} is wearig codex`);
+  `;
+
+  let player_list = await wcl_query(auth_token, players_query, {
+    report_id: report_id,
+    start_time: fight.startTime,
+    end_time: fight.endTime,
+  });
+  player_list = player_list.reportData.report.playerDetails.data.playerDetails;
+
+  player_list = Array.prototype.concat(...Object.values(player_list));
+
+  let result = [];
+  const combat_infos = await query_all_events(auth_token, report_id, fight, 'CombatantInfo');
+  for (var combat_info of combat_infos) {
+    // find matching player info and add the combat info
+    let player = player_list.find((p) => p.id == combat_info.id);
+    player.combat_info = combat_info
+    player.has_codex = !combat_info.gear.some((item) => item.id == codex_id);
   }
+  return player_list;
+}
+
+async function analyze_player(auth_token, report_id, fight, player) {
+  // TODO: the whole app
+  // determine player initial state
+  // query for events
+  // for each event..
+  //  await query_all_events
+  // merge_events()
+  // analyze_events()
+  // construct and return summary of results
+  return {};
+}
+
+async function analyze_players(auth_token, report_id, fight, players) {
+  let analysis = {};
+  for (var player of players) {
+    // TODO: Should this actually be a web worker thing?
+    analysis[player.id] = await analyze_player(auth_token, report_id, fight, player);
+  }
+  return analysis;
+}
+
+function PlayerList(props) {
+  if (!props.players) {
+    return <div display='flex'>Loading...</div>;
+  }
+  return (
+    <div display='flex'>
+      {props.players.map((p) => <PlayerCard
+        player={p}
+        analysis={props.analysis && props.analysis[p.id]}
+      />)}
+    </div>
+  );
+}
+
+function PlayerAnalysis(props) {
+  // no data yet means we're loading it
+  if (!props.analysis) {
+    return <div>Loading!</div>;
+  }
+  return <div>Analysis here!</div>;
+}
+
+function PlayerCard(props) {
+  return (
+    <div>
+      <div>{props.player.name}-{props.player.server}: {props.player.type}</div>
+      <PlayerAnalysis aa={props.analysis} />
+    </div>
+  );
 }
 
 function FightItem(props) {
@@ -185,7 +293,7 @@ function FightItem(props) {
   );
 }
 
-function FightsList(props) {
+function FightList(props) {
   return (
     <ul>{
       props.fights.map((f) =>
@@ -212,7 +320,8 @@ class CodexApp extends React.Component {
       fights: null,
       report_id: null,
       fight_id: null,
-      analysis_results: null,
+      players: null,
+      analysis: null,
     };
   }
 
@@ -221,18 +330,21 @@ class CodexApp extends React.Component {
     // for now, let's just render a text box I guess?
     let fights_list = null;
     if (this.state.fights) {
-      fights_list = <FightsList
+      fights_list = <FightList
         fights={this.state.fights}
-        clickFight={(e) => this.selectFight(e)}
+        clickFight={(e) => this.select_fight(e)}
         selected_fight={this.state.fight_id}
       />;
     }
 
-    let analysis_results = null;
-    if (this.state.analysis_results) {
-      analysis_results = <AnalysisResults />
-    } else if (this.state.fight_id) {
-      analysis_results = <div id='loading'>Loading...</div>
+    let player_list = null;
+    if (this.state.players) {
+      player_list = <PlayerList
+        players={this.state.players}
+        analysis={this.state.analysis}
+      />;
+    } else if (this.state.selected_fight) {
+      player_list = <div id='loading'>Loading...</div>;
     }
 
     return (
@@ -240,16 +352,50 @@ class CodexApp extends React.Component {
         <label for='report'>Enter a report ID or paste a URL:</label>
         <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
         {fights_list}
-        {analysis_results}
+        {player_list}
       </div>
     );
   }
 
-  selectFight(e) {
-    console.log(`setting state to be ${parseInt(e.target.value)}`);
-    this.setState({fight_id: parseInt(e.target.value)});
-    // get player info
+  async select_fight(e) {
+    let new_fight_id = parseInt(e.target.value);
+    this.setState({
+      fight_id: new_fight_id,
+      // clear old players while new ones load
+      players: null,
+    });
 
+    // TODO: To support "Loading..." then we could also store a var like
+    // Loading<Promise<Players>>
+    // and then pass that variable into PlayerList<> Component
+    // then PlayerList can check if (this.props.loading_list.loaded())
+    // and use this.props.loading_list.data
+    // ... and have loading_list.on_load(...) to call setState(as a no-op? or with a real thing)
+    // ... could have a "name" for this loader. or use object id guuid thing?
+    const fight = this.state.fights.find((f) => f.id == new_fight_id);
+    const players = await list_players(
+      this.props.auth_token,
+      this.state.report_id,
+      fight,
+    );
+    this.setState(function(s) {
+      if (s.fight_id == new_fight_id) {
+        s.players = players;
+      }
+      return s;
+    });
+
+    const analysis = await analyze_players(
+      this.props.auth_token,
+      this.state.report_id,
+      fight,
+      players,
+    );
+    this.setState(function(s) {
+      if (s.fight_id == new_fight_id) {
+        s.analysis = analysis;
+      }
+    });
   }
 
   handleReportInput(e) {
