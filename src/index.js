@@ -62,10 +62,10 @@ function PlayerAnalysis(props) {
   return (
     <div>
       <p><strong>{value_text}</strong></p>
-      <p>Effective codex dps: {props.analysis.codex_dps}</p>
+      <p>Effective codex dps: {Math.round(props.analysis.codex_dps)}</p>
       <p>Passive trinket dps: {props.analysis.trinket_dps}</p>
-      <p>Codex damage: {props.analysis.codex_dmg}</p>
-      <p>Strength damage: {props.analysis.str_dmg}</p>
+      <p>Codex damage: {Math.round(props.analysis.codex_dmg)}</p>
+      <p>Strength damage: {Math.round(props.analysis.str_dmg)}</p>
     </div>
   );
 }
@@ -94,6 +94,10 @@ function FightItem(props) {
   });
 
   const id_str = `fight_${f.id}`;
+  let name_str = `${f.name}`;
+  if (f.keystoneLevel) {
+    name_str = `+${f.keystoneLevel} ${name_str}`;
+  }
   return (
     <li>
       <input
@@ -104,7 +108,7 @@ function FightItem(props) {
         onClick={() => props.clickFight(f)}
         checked={props.selected}
       />
-      <label for={id_str}>{f.name} {duration_str} ({date_str})</label>
+      <label for={id_str}>{name_str} {duration_str} ({date_str})</label>
     </li>
   );
 }
@@ -181,11 +185,12 @@ class CodexApp extends React.Component {
       analysis: null,
     });
 
-    const players = await wcl.list_players(
+    let players = await wcl.list_players(
       this.props.auth_token,
       this.state.report_id,
       fight,
     );
+    players = players.filter((p) => p.type == 'DeathKnight' && p.specs[0].spec == 'Blood');
     this.setState(function(s) {
       if (s.fight.id == fight.id) {
         s.players = players;
@@ -229,7 +234,8 @@ class CodexApp extends React.Component {
       report_id: report_id,
     });
 
-    const fights = await wcl.list_fights(this.props.auth_token, report_id);
+    let fights = await wcl.list_fights(this.props.auth_token, report_id);
+    fights = fights.filter((f) => f.keystoneLevel);
     this.setState({
       fights: fights,
     });

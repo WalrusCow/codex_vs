@@ -3,9 +3,8 @@
 import * as buffs from './buffs.js';
 import * as wcl from './wcl.js';
 const codex_id = 185836;
-const codex_attack = 351450; // based off 272 phial @10% vers
-
-const passive_trinket_dps = 460;
+const codex_attack = 351450;
+const passive_trinket_dps = 360;
 const trinket_str_278 = 125;
 
 class Aura {
@@ -127,7 +126,7 @@ async function analyze_player(auth_token, report_id, fight, player) {
 
   let player_state = new PlayerState(player);
   let combat_events = await get_combat_events(auth_token, report_id, fight, player);
-  let latest_ap = null;
+  let latest_ap = player_state.get_ap();
   let added_str_dmg = 0;
   let codex_dmg = 0;
 

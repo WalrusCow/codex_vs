@@ -69,7 +69,7 @@ function PlayerAnalysis(props) {
     value_text = 'Strong for Codex';
   }
 
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, value_text)), /*#__PURE__*/React.createElement("p", null, "Effective codex dps: ", props.analysis.codex_dps), /*#__PURE__*/React.createElement("p", null, "Passive trinket dps: ", props.analysis.trinket_dps), /*#__PURE__*/React.createElement("p", null, "Codex damage: ", props.analysis.codex_dmg), /*#__PURE__*/React.createElement("p", null, "Strength damage: ", props.analysis.str_dmg));
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, value_text)), /*#__PURE__*/React.createElement("p", null, "Effective codex dps: ", Math.round(props.analysis.codex_dps)), /*#__PURE__*/React.createElement("p", null, "Passive trinket dps: ", props.analysis.trinket_dps), /*#__PURE__*/React.createElement("p", null, "Codex damage: ", Math.round(props.analysis.codex_dmg)), /*#__PURE__*/React.createElement("p", null, "Strength damage: ", Math.round(props.analysis.str_dmg)));
 }
 
 function PlayerCard(props) {
@@ -95,6 +95,12 @@ function FightItem(props) {
     hour12: false
   });
   const id_str = `fight_${f.id}`;
+  let name_str = `${f.name}`;
+
+  if (f.keystoneLevel) {
+    name_str = `+${f.keystoneLevel} ${name_str}`;
+  }
+
   return /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("input", {
     type: "radio",
     id: id_str,
@@ -104,7 +110,7 @@ function FightItem(props) {
     checked: props.selected
   }), /*#__PURE__*/React.createElement("label", {
     for: id_str
-  }, f.name, " ", duration_str, " (", date_str, ")"));
+  }, name_str, " ", duration_str, " (", date_str, ")"));
 }
 
 function FightList(props) {
@@ -175,7 +181,8 @@ class CodexApp extends React.Component {
       players: null,
       analysis: null
     });
-    const players = await wcl.list_players(this.props.auth_token, this.state.report_id, fight);
+    let players = await wcl.list_players(this.props.auth_token, this.state.report_id, fight);
+    players = players.filter(p => p.type == 'DeathKnight' && p.specs[0].spec == 'Blood');
     this.setState(function (s) {
       if (s.fight.id == fight.id) {
         s.players = players;
@@ -219,7 +226,8 @@ class CodexApp extends React.Component {
     this.setState({
       report_id: report_id
     });
-    const fights = await wcl.list_fights(this.props.auth_token, report_id);
+    let fights = await wcl.list_fights(this.props.auth_token, report_id);
+    fights = fights.filter(f => f.keystoneLevel);
     this.setState({
       fights: fights
     });
