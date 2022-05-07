@@ -118,12 +118,12 @@ function FightItem(props) {
 }
 
 function FightList(props) {
-  return /*#__PURE__*/React.createElement("ul", null, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("ul", null, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
     fight: f,
     key: f.id,
     clickFight: props.clickFight,
     selected: props.selected_fight === f.id
-  })));
+  }))));
 }
 
 function AnalysisResults(props) {
@@ -170,12 +170,16 @@ class CodexApp extends React.Component {
 
     return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       id: "input_box"
-    }, /*#__PURE__*/React.createElement("h2", null, "Report ID or URL"), /*#__PURE__*/React.createElement("input", {
+    }, /*#__PURE__*/React.createElement("label", {
+      class: "subtitle"
+    }, "Report ID or URL"), /*#__PURE__*/React.createElement("input", {
       type: "text",
       id: "report",
       name: "report",
       onInput: e => this.handleReportInput(e)
-    })), fights_list, player_list);
+    })), /*#__PURE__*/React.createElement("div", {
+      id: "columns_box"
+    }, fights_list, player_list));
   }
 
   async set_fight(fight) {

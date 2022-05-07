@@ -175,7 +175,7 @@ class CodexApp extends React.Component {
     return (
       <div>
         <div id='input_box'>
-          <label class='subtitle'>Report ID or URL</h2>
+          <label class='subtitle'>Report ID or URL</label>
           <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
         </div>
         <div id='columns_box'>
