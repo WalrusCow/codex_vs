@@ -1,6 +1,13 @@
 :root {
   color-scheme: dark;
   font-family: sans-serif;
+	--text-color: #f8f8f2;
+	--gray-text-color: #75747a;
+	--accent-color: #8be9fd;
+  --inner-background: #2b2a33;
+  --background-color: #282a36;
+  background: var(--background-color);
+  color: var(--text-color);
 }
 
 #root {
@@ -8,6 +15,16 @@
   justify-content: center;
   display: flex;
   min-width: 70%;
+}
+
+#auth_container {
+  justify-content: center;
+  display: flex;
+}
+#auth_button {
+  flex-grow: 1;
+  max-width: 70%;
+  padding: 1em;
 }
 
 #app {
@@ -44,6 +61,13 @@ input[type=text] {
   flex-grow: 1;
   flex-shrink: 0;
   min-width: 65%;
+  background: var(--inner-background);
+	color: var(--text-color);
+	border: 1px solid var(--gray-text-color);
+}
+input[type=text]:focus {
+  border: 1px solid var(--accent-color);
+  outline: none;
 }
 
 .report_box {
@@ -57,17 +81,45 @@ input[type=text] {
   flex-shrink: 1;
 }
 .fight_list {
+  list-style: none;
+  padding: 0;
 }
 .fight_item {
+  padding: 0;
+  margin: 0;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  display: flex;
+	background: var(--inner-background);
 }
 .fight_item input {
+  display: none;
+}
+.fight_item input:checked ~label {
+  border: 2px solid var(--accent-color);
 }
 .fight_item label {
+  width: 100%;
+  padding: 0.5em;
+  border: 2px solid var(--gray-text-color);
+  border-radius: 4px;
+}
+.fight_item label:hover {
+	border: 2px solid var(--text-color);
+}
+.fight_dur {
+  margin-left: 1em;
+}
+.fight_date {
+  color: var(--gray-text-color);
+  display: block;
+  font-size: 0.8em;
 }
 
 .players_box {
   flex-grow: 1;
   flex-shrink: 0;
+  width: 35%;
 }
 
 .loading_anim {
@@ -83,7 +135,7 @@ input[type=text] {
   border: 3px solid;
   border-radius: 50%;
   animation: spinning 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  border-color: ButtonText transparent transparent transparent;
+  border-color: var(--text-color) transparent transparent transparent;
 }
 .loading_anim div:nth-child(1) {
   animation-delay: 0.12s;
@@ -97,7 +149,6 @@ input[type=text] {
 .loading span {
   margin-left: 0.5em;
 }
-
 @keyframes spinning {
   from {
     transform: rotate(0deg);

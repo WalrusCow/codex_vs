@@ -59,7 +59,7 @@ function PlayerList(props) {
   }
   return (
     <div class='players_box'>
-      <h2>Characters</h2>
+      <h2>Analysis</h2>
       {contents}
     </div>
   );
@@ -94,7 +94,9 @@ function PlayerAnalysis(props) {
 function PlayerCard(props) {
   return (
     <div>
-      <div>{props.player.name}-{props.player.server}: {props.player.type}</div>
+      <div>
+        {props.player.name}-{props.player.server}: {props.player.specs[0].spec} {props.player.type.replace(/([A-Z])/g, ' $1')}
+      </div>
       <PlayerAnalysis analysis={props.analysis} />
     </div>
   );
@@ -129,7 +131,11 @@ function FightItem(props) {
         onClick={() => props.clickFight(f)}
         checked={props.selected}
       />
-      <label for={id_str}>{name_str} {duration_str} ({date_str})</label>
+      <label for={id_str}>
+        <span class='fight_title'>{name_str}</span>
+        <span class='fight_dur'>{duration_str}</span>
+        <span class='fight_date'>{date_str}</span>
+      </label>
     </li>
   );
 }
@@ -192,7 +198,7 @@ class CodexApp extends React.Component {
     return (
       <div>
         <div class='report_input'>
-          <label class='subtitle' for='report'>Report ID or URL:</label>
+          <label class='subtitle' for='report'>Report ID or URL</label>
           <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
         </div>
         <div class='report_box'>
@@ -300,7 +306,7 @@ class AppRoot extends React.Component {
       // the state is "needs auth"
       contents = (
         <div id='auth_container'>
-          <button id='auth_button' onClick={auth.redirectForAuth}>Authenticate with WCL</button>;
+          <button id='auth_button' onClick={auth.redirectForAuth}>Authenticate with WarcraftLogs</button>
         </div>
       );
     } else if (this.state.awaiting_token) {

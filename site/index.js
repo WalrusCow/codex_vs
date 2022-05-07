@@ -61,7 +61,7 @@ function PlayerList(props) {
 
   return /*#__PURE__*/React.createElement("div", {
     class: "players_box"
-  }, /*#__PURE__*/React.createElement("h2", null, "Characters"), contents);
+  }, /*#__PURE__*/React.createElement("h2", null, "Analysis"), contents);
 }
 
 function PlayerAnalysis(props) {
@@ -87,7 +87,7 @@ function PlayerAnalysis(props) {
 }
 
 function PlayerCard(props) {
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, props.player.name, "-", props.player.server, ": ", props.player.type), /*#__PURE__*/React.createElement(PlayerAnalysis, {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, props.player.name, "-", props.player.server, ": ", props.player.specs[0].spec, " ", props.player.type.replace(/([A-Z])/g, ' $1')), /*#__PURE__*/React.createElement(PlayerAnalysis, {
     analysis: props.analysis
   }));
 }
@@ -126,7 +126,13 @@ function FightItem(props) {
     checked: props.selected
   }), /*#__PURE__*/React.createElement("label", {
     for: id_str
-  }, name_str, " ", duration_str, " (", date_str, ")"));
+  }, /*#__PURE__*/React.createElement("span", {
+    class: "fight_title"
+  }, name_str), /*#__PURE__*/React.createElement("span", {
+    class: "fight_dur"
+  }, duration_str), /*#__PURE__*/React.createElement("span", {
+    class: "fight_date"
+  }, date_str)));
 }
 
 function FightList(props) {
@@ -185,7 +191,7 @@ class CodexApp extends React.Component {
     }, /*#__PURE__*/React.createElement("label", {
       class: "subtitle",
       for: "report"
-    }, "Report ID or URL:"), /*#__PURE__*/React.createElement("input", {
+    }, "Report ID or URL"), /*#__PURE__*/React.createElement("input", {
       type: "text",
       id: "report",
       name: "report",
@@ -288,7 +294,7 @@ class AppRoot extends React.Component {
       }, /*#__PURE__*/React.createElement("button", {
         id: "auth_button",
         onClick: auth.redirectForAuth
-      }, "Authenticate with WCL"), ";");
+      }, "Authenticate with WarcraftLogs"));
     } else if (this.state.awaiting_token) {
       // the state is "getting_token"
       contents = 'Waiting for token from WCL';
