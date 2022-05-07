@@ -48,16 +48,20 @@ function Loading(props) {
 }
 
 function PlayerList(props) {
+  let contents = null;
+
   if (!props.players) {
-    return /*#__PURE__*/React.createElement(Loading, null);
+    contents = /*#__PURE__*/React.createElement(Loading, null);
+  } else {
+    contents = props.players.map(p => /*#__PURE__*/React.createElement(PlayerCard, {
+      player: p,
+      analysis: props.analysis && props.analysis[p.id]
+    }));
   }
 
   return /*#__PURE__*/React.createElement("div", {
-    display: "flex"
-  }, props.players.map(p => /*#__PURE__*/React.createElement(PlayerCard, {
-    player: p,
-    analysis: props.analysis && props.analysis[p.id]
-  })));
+    class: "players_box"
+  }, /*#__PURE__*/React.createElement("h2", null, "Characters"), contents);
 }
 
 function PlayerAnalysis(props) {
@@ -111,7 +115,9 @@ function FightItem(props) {
     name_str = `+${f.keystoneLevel} ${name_str}`;
   }
 
-  return /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("input", {
+  return /*#__PURE__*/React.createElement("li", {
+    class: "fight_item"
+  }, /*#__PURE__*/React.createElement("input", {
     type: "radio",
     id: id_str,
     name: "fight",
@@ -124,7 +130,11 @@ function FightItem(props) {
 }
 
 function FightList(props) {
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("ul", null, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
+  return /*#__PURE__*/React.createElement("div", {
+    class: "fights_box"
+  }, /*#__PURE__*/React.createElement("h2", null, "Choose a run"), /*#__PURE__*/React.createElement("ul", {
+    class: "fight_list"
+  }, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
     fight: f,
     key: f.id,
     clickFight: props.clickFight,
@@ -171,7 +181,7 @@ class CodexApp extends React.Component {
     }
 
     return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      id: "input_box"
+      class: "report_input"
     }, /*#__PURE__*/React.createElement("label", {
       class: "subtitle",
       for: "report"
@@ -181,7 +191,7 @@ class CodexApp extends React.Component {
       name: "report",
       onInput: e => this.handleReportInput(e)
     })), /*#__PURE__*/React.createElement("div", {
-      id: "columns_box"
+      class: "report_box"
     }, fights_list, player_list));
   }
 
@@ -273,9 +283,12 @@ class AppRoot extends React.Component {
 
     if (!this.state.auth_token && !this.state.awaiting_token) {
       // the state is "needs auth"
-      contents = /*#__PURE__*/React.createElement("button", {
+      contents = /*#__PURE__*/React.createElement("div", {
+        id: "auth_container"
+      }, /*#__PURE__*/React.createElement("button", {
+        id: "auth_button",
         onClick: auth.redirectForAuth
-      }, "Authenticate with WCL");
+      }, "Authenticate with WCL"), ";");
     } else if (this.state.awaiting_token) {
       // the state is "getting_token"
       contents = 'Waiting for token from WCL';

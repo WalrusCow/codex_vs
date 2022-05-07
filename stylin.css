@@ -13,18 +13,23 @@
 #app {
   width: 100%;
   max-width: 700px;
+  padding: 1em;
 }
 
-h1, h2 {
+h1 {
   text-align: center;
   flex-shrink: 0;
 }
+h2 {
+  flex-shrink: 0;
+}
 
-#input_box {
+.report_input {
   align-items: center;
   justify-content: center;
   display: flex;
   margin: 6px;
+  flex-wrap: wrap;
 }
 
 input[type=text] {
@@ -37,6 +42,32 @@ input[type=text] {
   padding-top: 8px;
   padding-bottom: 8px;
   flex-grow: 1;
+  flex-shrink: 0;
+  min-width: 65%;
+}
+
+.report_box {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1em;
+}
+
+.fights_box {
+  flex-grow: 2;
+  flex-shrink: 1;
+}
+.fight_list {
+}
+.fight_item {
+}
+.fight_item input {
+}
+.fight_item label {
+}
+
+.players_box {
+  flex-grow: 1;
+  flex-shrink: 0;
 }
 
 .loading_anim {

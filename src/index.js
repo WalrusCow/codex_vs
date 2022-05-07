@@ -48,15 +48,19 @@ function Loading(props) {
 }
 
 function PlayerList(props) {
+  let contents = null;
   if (!props.players) {
-    return <Loading/>;
+    contents = <Loading/>;
+  } else {
+    contents = props.players.map((p) => <PlayerCard
+      player={p}
+      analysis={props.analysis && props.analysis[p.id]}
+    />);
   }
   return (
-    <div display='flex'>
-      {props.players.map((p) => <PlayerCard
-        player={p}
-        analysis={props.analysis && props.analysis[p.id]}
-      />)}
+    <div class='players_box'>
+      <h2>Characters</h2>
+      {contents}
     </div>
   );
 }
@@ -116,7 +120,7 @@ function FightItem(props) {
     name_str = `+${f.keystoneLevel} ${name_str}`;
   }
   return (
-    <li>
+    <li class='fight_item'>
       <input
         type='radio'
         id={id_str}
@@ -132,8 +136,9 @@ function FightItem(props) {
 
 function FightList(props) {
   return (
-    <div>
-      <ul>{
+    <div class='fights_box'>
+      <h2>Choose a run</h2>
+      <ul class='fight_list'>{
         props.fights.map((f) =>
           <FightItem
             fight={f}
@@ -186,11 +191,11 @@ class CodexApp extends React.Component {
 
     return (
       <div>
-        <div id='input_box'>
+        <div class='report_input'>
           <label class='subtitle' for='report'>Report ID or URL:</label>
           <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
         </div>
-        <div id='columns_box'>
+        <div class='report_box'>
           {fights_list}
           {player_list}
         </div>
@@ -293,7 +298,11 @@ class AppRoot extends React.Component {
     let contents = null;
     if (!this.state.auth_token && !this.state.awaiting_token) {
       // the state is "needs auth"
-      contents = <button onClick={auth.redirectForAuth}>Authenticate with WCL</button>;
+      contents = (
+        <div id='auth_container'>
+          <button id='auth_button' onClick={auth.redirectForAuth}>Authenticate with WCL</button>;
+        </div>
+      );
     } else if (this.state.awaiting_token) {
       // the state is "getting_token"
       contents = 'Waiting for token from WCL';
