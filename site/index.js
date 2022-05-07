@@ -39,11 +39,17 @@ function parse_report_url(url) {
   return result;
 }
 
+function Loading(props) {
+  return /*#__PURE__*/React.createElement("div", {
+    class: "loading"
+  }, /*#__PURE__*/React.createElement("div", {
+    class: "loading_anim"
+  }, /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("div", null), /*#__PURE__*/React.createElement("div", null)), /*#__PURE__*/React.createElement("span", null, "Loading..."));
+}
+
 function PlayerList(props) {
   if (!props.players) {
-    return /*#__PURE__*/React.createElement("div", {
-      display: "flex"
-    }, "Loading...");
+    return /*#__PURE__*/React.createElement(Loading, null);
   }
 
   return /*#__PURE__*/React.createElement("div", {
@@ -57,7 +63,7 @@ function PlayerList(props) {
 function PlayerAnalysis(props) {
   // no data yet means we're loading it.. or maybe it means this isn't supported?
   if (!props.analysis) {
-    return /*#__PURE__*/React.createElement("div", null, "Loading!");
+    return /*#__PURE__*/React.createElement(Loading, null);
   }
 
   if (props.analysis.error) {
@@ -157,22 +163,19 @@ class CodexApp extends React.Component {
 
     let player_list = null;
 
-    if (this.state.players) {
+    if (this.state.fight) {
       player_list = /*#__PURE__*/React.createElement(PlayerList, {
         players: this.state.players,
         analysis: this.state.analysis
       });
-    } else if (this.state.selected_fight) {
-      player_list = /*#__PURE__*/React.createElement("div", {
-        id: "loading"
-      }, "Loading...");
     }
 
     return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       id: "input_box"
     }, /*#__PURE__*/React.createElement("label", {
-      class: "subtitle"
-    }, "Report ID or URL"), /*#__PURE__*/React.createElement("input", {
+      class: "subtitle",
+      for: "report"
+    }, "Report ID or URL:"), /*#__PURE__*/React.createElement("input", {
       type: "text",
       id: "report",
       name: "report",

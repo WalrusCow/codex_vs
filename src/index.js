@@ -33,9 +33,23 @@ function parse_report_url(url) {
   return result;
 }
 
+function Loading(props) {
+  return (
+    <div class='loading'>
+      <div class='loading_anim'>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <span>Loading...</span>
+    </div>
+  );
+}
+
 function PlayerList(props) {
   if (!props.players) {
-    return <div display='flex'>Loading...</div>;
+    return <Loading/>;
   }
   return (
     <div display='flex'>
@@ -50,7 +64,7 @@ function PlayerList(props) {
 function PlayerAnalysis(props) {
   // no data yet means we're loading it.. or maybe it means this isn't supported?
   if (!props.analysis) {
-    return <div>Loading!</div>;
+    return <Loading/>;
   }
   if (props.analysis.error) {
     return <div>{props.analysis.error}</div>;
@@ -163,19 +177,17 @@ class CodexApp extends React.Component {
     }
 
     let player_list = null;
-    if (this.state.players) {
+    if (this.state.fight) {
       player_list = <PlayerList
         players={this.state.players}
         analysis={this.state.analysis}
       />;
-    } else if (this.state.selected_fight) {
-      player_list = <div id='loading'>Loading...</div>;
     }
 
     return (
       <div>
         <div id='input_box'>
-          <label class='subtitle'>Report ID or URL</label>
+          <label class='subtitle' for='report'>Report ID or URL:</label>
           <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
         </div>
         <div id='columns_box'>
@@ -290,8 +302,8 @@ class AppRoot extends React.Component {
     }
     return (
       <div id='app'>
-      <h1>Codex Analysis</h1>
-      {contents}
+        <h1>Codex Analysis</h1>
+        {contents}
       </div>
     );
   }
