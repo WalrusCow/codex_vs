@@ -19,6 +19,9 @@ function parse_report_url(url) {
     return result;
   }
   result.report_id = url.pathname.substr('/reports/'.length);
+  if (result.report_id.endsWith('/')) {
+    result.report_id = result.report_id.substr(0, result.report_id.length - 1);
+  }
   if (url.hash) {
     // Strip leading # from hash
     let params = new URLSearchParams(url.hash.substr(1));
@@ -115,17 +118,19 @@ function FightItem(props) {
 
 function FightList(props) {
   return (
-    <ul>{
-      props.fights.map((f) =>
-        <FightItem
-          fight={f}
-          key={f.id}
-          clickFight={props.clickFight}
-          selected={props.selected_fight === f.id}
-        />
-      )
-    }
-    </ul>
+    <div>
+      <ul>{
+        props.fights.map((f) =>
+          <FightItem
+            fight={f}
+            key={f.id}
+            clickFight={props.clickFight}
+            selected={props.selected_fight === f.id}
+          />
+        )
+      }
+      </ul>
+    </div>
   );
 }
 
@@ -169,10 +174,14 @@ class CodexApp extends React.Component {
 
     return (
       <div>
-        <label for='report'>Enter a report ID or paste a URL:</label>
-        <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
-        {fights_list}
-        {player_list}
+        <div id='input_box'>
+          <label class='subtitle'>Report ID or URL</h2>
+          <input type='text' id='report' name='report' onInput={(e)=>this.handleReportInput(e)} />
+        </div>
+        <div id='columns_box'>
+          {fights_list}
+          {player_list}
+        </div>
       </div>
     );
   }
@@ -269,15 +278,22 @@ class AppRoot extends React.Component {
   }
 
   render() {
+    let contents = null;
     if (!this.state.auth_token && !this.state.awaiting_token) {
       // the state is "needs auth"
-      return <button onClick={auth.redirectForAuth}>Authenticate with WCL</button>;
+      contents = <button onClick={auth.redirectForAuth}>Authenticate with WCL</button>;
     } else if (this.state.awaiting_token) {
       // the state is "getting_token"
-      return 'Waiting for token from WCL';
+      contents = 'Waiting for token from WCL';
     } else {
-      return <CodexApp auth_token={this.state.auth_token} />;
+      contents = <CodexApp auth_token={this.state.auth_token} />;
     }
+    return (
+      <div id='app'>
+      <h1>Codex Analysis</h1>
+      {contents}
+      </div>
+    );
   }
 }
 

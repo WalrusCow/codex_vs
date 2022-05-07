@@ -117,6 +117,12 @@ async function analyze_player(auth_token, report_id, fight, player) {
     };
   }
 
+  if (!player.combat_info) {
+    return {
+      error: 'Log does not contain gear info'
+    };
+  }
+
   if (!player.combat_info.gear.find(g => g.id == codex_id)) {
     // So far only works for people wearing a codex
     return {

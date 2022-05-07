@@ -22,6 +22,10 @@ function parse_report_url(url) {
 
   result.report_id = url.pathname.substr('/reports/'.length);
 
+  if (result.report_id.endsWith('/')) {
+    result.report_id = result.report_id.substr(0, result.report_id.length - 1);
+  }
+
   if (url.hash) {
     // Strip leading # from hash
     let params = new URLSearchParams(url.hash.substr(1));
@@ -164,14 +168,14 @@ class CodexApp extends React.Component {
       }, "Loading...");
     }
 
-    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-      for: "report"
-    }, "Enter a report ID or paste a URL:"), /*#__PURE__*/React.createElement("input", {
+    return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      id: "input_box"
+    }, /*#__PURE__*/React.createElement("h2", null, "Report ID or URL"), /*#__PURE__*/React.createElement("input", {
       type: "text",
       id: "report",
       name: "report",
       onInput: e => this.handleReportInput(e)
-    }), fights_list, player_list);
+    })), fights_list, player_list);
   }
 
   async set_fight(fight) {
@@ -258,19 +262,25 @@ class AppRoot extends React.Component {
   }
 
   render() {
+    let contents = null;
+
     if (!this.state.auth_token && !this.state.awaiting_token) {
       // the state is "needs auth"
-      return /*#__PURE__*/React.createElement("button", {
+      contents = /*#__PURE__*/React.createElement("button", {
         onClick: auth.redirectForAuth
       }, "Authenticate with WCL");
     } else if (this.state.awaiting_token) {
       // the state is "getting_token"
-      return 'Waiting for token from WCL';
+      contents = 'Waiting for token from WCL';
     } else {
-      return /*#__PURE__*/React.createElement(CodexApp, {
+      contents = /*#__PURE__*/React.createElement(CodexApp, {
         auth_token: this.state.auth_token
       });
     }
+
+    return /*#__PURE__*/React.createElement("div", {
+      id: "app"
+    }, /*#__PURE__*/React.createElement("h1", null, "Codex Analysis"), contents);
   }
 
 }
