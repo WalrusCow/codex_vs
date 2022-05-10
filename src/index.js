@@ -4,6 +4,19 @@ import * as auth from './auth.js';
 import * as wcl from './wcl.js';
 import * as codex from './codex.js';
 
+const short_dungeon_names = {
+  "De Other Side": "De Other Side",
+  "Halls of Atonement": "Halls",
+  "Mists of Tirna Scithe": "Mists",
+  "Plaguefall": "Plaguefall",
+  "Sanguine Depths": "Sanguine",
+  "Spires of Ascension": "Spires",
+  "Tazavesh: So'leah's Gambit": "Gambit",
+  "Tazavesh: Streets of Wonder": "Streets",
+  "The Necrotic Wake": "Necrotic Wake",
+  "Theater of Pain": "Theater",
+};
+
 function parse_report_url(url) {
   let result = {
     report_id: null,
@@ -118,7 +131,7 @@ function PlayerAnalysis(props) {
 function PlayerCard(props) {
   return (
     <div>
-      <div>
+      <div class='player_name'>
         {props.player.name}-{props.player.server}: {props.player.specs[0].spec} {props.player.type.replace(/([A-Z])/g, ' $1')}
       </div>
       <PlayerAnalysis analysis={props.analysis} />
@@ -141,12 +154,12 @@ function FightItem(props) {
   });
 
   const id_str = `fight_${f.id}`;
-  let name_str = `${f.name}`;
+  let name_str = `${short_dungeon_names[f.name] || f.name}`;
   if (f.keystoneLevel) {
     name_str = `+${f.keystoneLevel} ${name_str}`;
   }
   return (
-    <li class='fight_item'>
+    <div class='fight_item'>
       <input
         type='radio'
         id={id_str}
@@ -156,11 +169,10 @@ function FightItem(props) {
         checked={props.selected}
       />
       <label for={id_str}>
-        <span class='fight_title'>{name_str}</span>
-        <span class='fight_dur'>{duration_str}</span>
+        <span class='fight_title'>{name_str} {duration_str}</span>
         <span class='fight_date'>{date_str}</span>
       </label>
-    </li>
+    </div>
   );
 }
 
@@ -168,7 +180,7 @@ function FightList(props) {
   return (
     <div class='fights_box'>
       <h2>Select a run</h2>
-      <ul class='fight_list'>{
+      <div class='fight_list'>{
         props.fights.map((f) =>
           <FightItem
             fight={f}
@@ -178,7 +190,7 @@ function FightList(props) {
           />
         )
       }
-      </ul>
+      </div>
     </div>
   );
 }
@@ -288,6 +300,10 @@ class CodexApp extends React.Component {
 
     this.setState({
       report_id: report_id,
+      fights: null,
+      fight: null,
+      players: null,
+      analysis: null,
     });
 
     let fights = await wcl.list_fights(this.props.auth_token, report_id);

@@ -83,7 +83,9 @@ input[type=text]:focus {
 .report_box {
   display: flex;
   flex-wrap: wrap;
-  column-gap: 1em;
+  row-gap: 0.5em;
+  column-gap: 0.5em;
+  flex-direction: column;
 }
 
 .fights_box {
@@ -91,14 +93,19 @@ input[type=text]:focus {
   flex-shrink: 1;
 }
 .fight_list {
-  list-style: none;
-  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.5em;
+  column-gap: 0.5em;
+  margin: 0;
 }
 .fight_item {
   padding: 0;
   margin: 0;
-  margin-bottom: 0.5em;
   display: flex;
+  flex-shrink: 1;
+  flex-grow: 1;
+  flex-basis: 100%;
 }
 .fight_item input {
   display: none;
@@ -114,34 +121,34 @@ input[type=text]:focus {
   border: 1px solid transparent;
   border-radius: 4px;
 }
-.fight_item label:hover {  
+.fight_item label:hover {
   border: 1px solid var(--gray-text-color);
   box-shadow: 5px 9px 14px 0px #1c1c1c;
-}
-.fight_dur {
-  margin-left: 1em;
 }
 .fight_date {
   color: var(--gray-text-color);
   display: block;
   font-size: 0.8em;
 }
+.fight_title {
+  display: block;
+}
 
 .players_box {
-  flex-grow: 2;
+  flex-grow: 1;
   flex-shrink: 0;
-  width: 35%;
 }
 .analysis_box {
   display: flex;
+  flex-wrap: wrap;
   padding-top: 0.5em;
+  row-gap: 0.5em;
   column-gap: 0.5em;
 }
 .result_box {
   padding: 0.5em;
   border-radius: 4px;
   flex-grow: 1;
-  width: 50%;
   border: 1px solid transparent;
 }
 .result_box:hover, .result_box.better {

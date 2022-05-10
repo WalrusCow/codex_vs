@@ -3,6 +3,18 @@
 import * as auth from './auth.js';
 import * as wcl from './wcl.js';
 import * as codex from './codex.js';
+const short_dungeon_names = {
+  "De Other Side": "De Other Side",
+  "Halls of Atonement": "Halls",
+  "Mists of Tirna Scithe": "Mists",
+  "Plaguefall": "Plaguefall",
+  "Sanguine Depths": "Sanguine",
+  "Spires of Ascension": "Spires",
+  "Tazavesh: So'leah's Gambit": "Gambit",
+  "Tazavesh: Streets of Wonder": "Streets",
+  "The Necrotic Wake": "Necrotic Wake",
+  "Theater of Pain": "Theater"
+};
 
 function parse_report_url(url) {
   let result = {
@@ -128,7 +140,9 @@ function PlayerAnalysis(props) {
 }
 
 function PlayerCard(props) {
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", null, props.player.name, "-", props.player.server, ": ", props.player.specs[0].spec, " ", props.player.type.replace(/([A-Z])/g, ' $1')), /*#__PURE__*/React.createElement(PlayerAnalysis, {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    class: "player_name"
+  }, props.player.name, "-", props.player.server, ": ", props.player.specs[0].spec, " ", props.player.type.replace(/([A-Z])/g, ' $1')), /*#__PURE__*/React.createElement(PlayerAnalysis, {
     analysis: props.analysis
   }));
 }
@@ -150,13 +164,13 @@ function FightItem(props) {
     hour12: false
   });
   const id_str = `fight_${f.id}`;
-  let name_str = `${f.name}`;
+  let name_str = `${short_dungeon_names[f.name] || f.name}`;
 
   if (f.keystoneLevel) {
     name_str = `+${f.keystoneLevel} ${name_str}`;
   }
 
-  return /*#__PURE__*/React.createElement("li", {
+  return /*#__PURE__*/React.createElement("div", {
     class: "fight_item"
   }, /*#__PURE__*/React.createElement("input", {
     type: "radio",
@@ -169,9 +183,7 @@ function FightItem(props) {
     for: id_str
   }, /*#__PURE__*/React.createElement("span", {
     class: "fight_title"
-  }, name_str), /*#__PURE__*/React.createElement("span", {
-    class: "fight_dur"
-  }, duration_str), /*#__PURE__*/React.createElement("span", {
+  }, name_str, " ", duration_str), /*#__PURE__*/React.createElement("span", {
     class: "fight_date"
   }, date_str)));
 }
@@ -179,7 +191,7 @@ function FightItem(props) {
 function FightList(props) {
   return /*#__PURE__*/React.createElement("div", {
     class: "fights_box"
-  }, /*#__PURE__*/React.createElement("h2", null, "Select a run"), /*#__PURE__*/React.createElement("ul", {
+  }, /*#__PURE__*/React.createElement("h2", null, "Select a run"), /*#__PURE__*/React.createElement("div", {
     class: "fight_list"
   }, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
     fight: f,
@@ -292,7 +304,11 @@ class CodexApp extends React.Component {
     }
 
     this.setState({
-      report_id: report_id
+      report_id: report_id,
+      fights: null,
+      fight: null,
+      players: null,
+      analysis: null
     });
     let fights = await wcl.list_fights(this.props.auth_token, report_id);
     fights = fights.filter(f => f.keystoneLevel);
