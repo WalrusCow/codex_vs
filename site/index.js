@@ -64,6 +64,8 @@ function PlayerList(props) {
 
   if (!props.players) {
     contents = /*#__PURE__*/React.createElement(Loading, null);
+  } else if (props.players.length == 0) {
+    contents = /*#__PURE__*/React.createElement("div", null, "No Blood Death Knights found!");
   } else {
     contents = props.players.map(p => /*#__PURE__*/React.createElement(PlayerCard, {
       player: p,
@@ -198,11 +200,9 @@ function FightList(props) {
     key: f.id,
     clickFight: props.clickFight,
     selected: props.selected_fight === f.id
-  }))));
-}
-
-function AnalysisResults(props) {
-  return /*#__PURE__*/React.createElement("div", null, "Results!");
+  })), /*#__PURE__*/React.createElement("div", {
+    id: "fight_list_pad"
+  })));
 }
 
 class CodexApp extends React.Component {
@@ -317,7 +317,7 @@ class CodexApp extends React.Component {
     });
 
     if (fight_id) {
-      this.set_fight(fights.at(fight_id == 'last' ? -1 : fight_id));
+      this.set_fight(fight_id == 'last' ? fights.at(-1) : fights.find(f => f.id == fight_id));
     }
   }
 

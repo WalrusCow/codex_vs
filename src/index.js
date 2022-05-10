@@ -64,6 +64,8 @@ function PlayerList(props) {
   let contents = null;
   if (!props.players) {
     contents = <Loading/>;
+  } else if (props.players.length == 0) {
+    contents = <div>No Blood Death Knights found!</div>;
   } else {
     contents = props.players.map((p) => <PlayerCard
       player={p}
@@ -180,23 +182,19 @@ function FightList(props) {
   return (
     <div class='fights_box'>
       <h2>Select a run</h2>
-      <div class='fight_list'>{
-        props.fights.map((f) =>
+      <div class='fight_list'>
+        {props.fights.map((f) =>
           <FightItem
             fight={f}
             key={f.id}
             clickFight={props.clickFight}
             selected={props.selected_fight === f.id}
           />
-        )
-      }
+        )}
+        <div id='fight_list_pad'></div>
       </div>
     </div>
   );
-}
-
-function AnalysisResults(props) {
-  return <div>Results!</div>;
 }
 
 class CodexApp extends React.Component {
@@ -313,7 +311,7 @@ class CodexApp extends React.Component {
     });
 
     if (fight_id) {
-      this.set_fight(fights.at(fight_id == 'last' ? -1 : fight_id));
+      this.set_fight(fight_id == 'last' ? fights.at(-1) : fights.find((f) => f.id == fight_id));
     }
   }
 }
