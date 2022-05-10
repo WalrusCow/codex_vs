@@ -74,16 +74,57 @@ function PlayerAnalysis(props) {
     return /*#__PURE__*/React.createElement("div", null, props.analysis.error);
   }
 
-  let value_text = 'Weak for Codex';
-  const dps_diff = props.analysis.trinket_dps - props.analysis.codex_dps;
+  const decanter_dps = props.analysis.str_dps + props.analysis.trinket_dps;
+  const decanter_dmg = props.analysis.str_dmg + props.analysis.trinket_dmg;
+  const dps_diff = decanter_dps - props.analysis.codex_dps;
+  const codex_best = dps_diff < 0;
+  const is_close = Math.abs(dps_diff) < props.analysis.trinket_dps * 0.1;
+  const codex_link = 'https://www.wowhead.com/item=185836/codex-of-the-first-technique?bonus=6536:5968';
+  const decanter_link = 'https://www.wowhead.com/item=178861/decanter-of-anima-charged-winds?bonus=6536:5965&class=6&spec=250';
 
-  if (Math.abs(dps_diff) < props.analysis.trinket_dps * 0.1) {
-    value_text = 'Okay for Codex';
-  } else if (dps_diff < 0) {
-    value_text = 'Strong for Codex';
-  }
+  function shortNumber(num) {
+    num = Math.round(num);
 
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("strong", null, value_text)), /*#__PURE__*/React.createElement("p", null, "Effective codex dps: ", Math.round(props.analysis.codex_dps)), /*#__PURE__*/React.createElement("p", null, "Passive trinket dps: ", props.analysis.trinket_dps), /*#__PURE__*/React.createElement("p", null, "Codex damage: ", Math.round(props.analysis.codex_dmg)), /*#__PURE__*/React.createElement("p", null, "Strength damage: ", Math.round(props.analysis.str_dmg)));
+    if (num > 1_000_000) {
+      return (num / 1_000_000).toPrecision(3) + 'M';
+    } else if (num > 1_000) {
+      return (num / 1_000).toPrecision(3) + 'k';
+    }
+
+    return num;
+  } // TODO: Add a little hover ? thing to explain the stuff
+  // TODO: Add a little corner banner maybe for which is best to make it more obvious?
+
+
+  return /*#__PURE__*/React.createElement("div", {
+    class: "analysis_box"
+  }, /*#__PURE__*/React.createElement("div", {
+    class: `result_box ${codex_best ? "better" : "worse"}`
+  }, /*#__PURE__*/React.createElement("div", {
+    class: "result_title"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: `${codex_link}`,
+    target: "_blank"
+  }, "Codex")), /*#__PURE__*/React.createElement("div", {
+    class: "result_contents"
+  }, /*#__PURE__*/React.createElement("span", {
+    class: "result_text"
+  }, "DPS: ", shortNumber(props.analysis.codex_dps)), /*#__PURE__*/React.createElement("span", {
+    class: "result_text"
+  }, "Damage: ", shortNumber(props.analysis.codex_dmg)))), /*#__PURE__*/React.createElement("div", {
+    class: `result_box ${!codex_best ? "better" : "worse"}`
+  }, /*#__PURE__*/React.createElement("div", {
+    class: "result_title"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: `${decanter_link}`,
+    target: "_blank"
+  }, "Decanter"), " (estimated)"), /*#__PURE__*/React.createElement("div", {
+    class: "result_contents"
+  }, /*#__PURE__*/React.createElement("span", {
+    class: "result_text"
+  }, "DPS: ", shortNumber(decanter_dps)), /*#__PURE__*/React.createElement("span", {
+    class: "result_text"
+  }, "Damage: ", shortNumber(decanter_dmg)))));
 }
 
 function PlayerCard(props) {
@@ -138,7 +179,7 @@ function FightItem(props) {
 function FightList(props) {
   return /*#__PURE__*/React.createElement("div", {
     class: "fights_box"
-  }, /*#__PURE__*/React.createElement("h2", null, "Choose a run"), /*#__PURE__*/React.createElement("ul", {
+  }, /*#__PURE__*/React.createElement("h2", null, "Select a run"), /*#__PURE__*/React.createElement("ul", {
     class: "fight_list"
   }, props.fights.map(f => /*#__PURE__*/React.createElement(FightItem, {
     fight: f,

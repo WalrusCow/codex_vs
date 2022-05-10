@@ -197,11 +197,14 @@ async function analyze_player(auth_token, report_id, fight, player) {
     combat_time += pull.endTime - pull.startTime;
   }
 
-  const codex_dps = (codex_dmg - added_str_dmg) / (combat_time / 1000);
+  const codex_dps = codex_dmg / (combat_time / 1000);
+  const str_dps = added_str_dmg / (combat_time / 1000);
   return {
     codex_dmg: codex_dmg,
-    str_dmg: added_str_dmg,
     codex_dps: codex_dps,
+    str_dmg: added_str_dmg,
+    str_dps: str_dps,
+    trinket_dmg: passive_trinket_dps * (combat_time / 1000),
     trinket_dps: passive_trinket_dps
   };
 }

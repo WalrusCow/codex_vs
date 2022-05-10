@@ -73,20 +73,44 @@ function PlayerAnalysis(props) {
   if (props.analysis.error) {
     return <div>{props.analysis.error}</div>;
   }
-  let value_text = 'Weak for Codex';
-  const dps_diff = props.analysis.trinket_dps - props.analysis.codex_dps;
-  if (Math.abs(dps_diff) < (props.analysis.trinket_dps * 0.1)) {
-    value_text = 'Okay for Codex';
-  } else if (dps_diff < 0) {
-    value_text = 'Strong for Codex';
+
+  const decanter_dps = props.analysis.str_dps + props.analysis.trinket_dps;
+  const decanter_dmg = props.analysis.str_dmg + props.analysis.trinket_dmg;
+
+  const dps_diff = decanter_dps - props.analysis.codex_dps;
+  const codex_best = dps_diff < 0;
+  const is_close = Math.abs(dps_diff) < (props.analysis.trinket_dps * 0.1);
+
+  const codex_link = 'https://www.wowhead.com/item=185836/codex-of-the-first-technique?bonus=6536:5968';
+  const decanter_link = 'https://www.wowhead.com/item=178861/decanter-of-anima-charged-winds?bonus=6536:5965&class=6&spec=250';
+
+  function shortNumber(num) {
+    num = Math.round(num);
+    if (num > 1_000_000) {
+      return (num / 1_000_000).toPrecision(3) + 'M';
+    } else if (num > 1_000) {
+      return (num / 1_000).toPrecision(3) + 'k';
+    }
+    return num;
   }
+  // TODO: Add a little hover ? thing to explain the stuff
+  // TODO: Add a little corner banner maybe for which is best to make it more obvious?
   return (
-    <div>
-      <p><strong>{value_text}</strong></p>
-      <p>Effective codex dps: {Math.round(props.analysis.codex_dps)}</p>
-      <p>Passive trinket dps: {props.analysis.trinket_dps}</p>
-      <p>Codex damage: {Math.round(props.analysis.codex_dmg)}</p>
-      <p>Strength damage: {Math.round(props.analysis.str_dmg)}</p>
+    <div class='analysis_box'>
+      <div class={`result_box ${codex_best ? "better" : "worse"}`}>
+          <div class='result_title'><a href={`${codex_link}`} target='_blank'>Codex</a></div>
+          <div class='result_contents'>
+          <span class='result_text'>DPS: {shortNumber(props.analysis.codex_dps)}</span>
+          <span class='result_text'>Damage: {shortNumber(props.analysis.codex_dmg)}</span>
+        </div>
+      </div>
+      <div class={`result_box ${!codex_best ? "better" : "worse"}`}>
+        <div class='result_title'><a href={`${decanter_link}`} target='_blank'>Decanter</a> (estimated)</div>
+        <div class='result_contents'>
+          <span class='result_text'>DPS: {shortNumber(decanter_dps)}</span>
+          <span class='result_text'>Damage: {shortNumber(decanter_dmg)}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -143,7 +167,7 @@ function FightItem(props) {
 function FightList(props) {
   return (
     <div class='fights_box'>
-      <h2>Choose a run</h2>
+      <h2>Select a run</h2>
       <ul class='fight_list'>{
         props.fights.map((f) =>
           <FightItem

@@ -1,11 +1,13 @@
 :root {
   color-scheme: dark;
   font-family: sans-serif;
-	--text-color: #f8f8f2;
-	--gray-text-color: #75747a;
-	--accent-color: #8be9fd;
+  --text-color: #f8f8f2;
+  --gray-text-color: #75747a;
+  --accent-color: #75747a;
   --inner-background: #2b2a33;
   --background-color: #282a36;
+  --orange-color: #ffb86c;
+  --blue-color: #8be9fd;
   background: var(--background-color);
   color: var(--text-color);
 }
@@ -31,6 +33,14 @@
   width: 100%;
   max-width: 700px;
   padding: 1em;
+}
+
+a:link, a:visited{
+  color: var(--blue-color);
+  text-decoration: none;
+}
+a:hover{
+  text-decoration: underline;
 }
 
 h1 {
@@ -62,8 +72,8 @@ input[type=text] {
   flex-shrink: 0;
   min-width: 65%;
   background: var(--inner-background);
-	color: var(--text-color);
-	border: 1px solid var(--gray-text-color);
+  color: var(--text-color);
+  border: 1px solid var(--gray-text-color);
 }
 input[type=text]:focus {
   border: 1px solid var(--accent-color);
@@ -77,7 +87,7 @@ input[type=text]:focus {
 }
 
 .fights_box {
-  flex-grow: 2;
+  flex-grow: 1;
   flex-shrink: 1;
 }
 .fight_list {
@@ -87,25 +97,26 @@ input[type=text]:focus {
 .fight_item {
   padding: 0;
   margin: 0;
-  margin-top: 0.5em;
   margin-bottom: 0.5em;
   display: flex;
-	background: var(--inner-background);
 }
 .fight_item input {
   display: none;
 }
 .fight_item input:checked ~label {
-  border: 2px solid var(--accent-color);
+  border: 1px solid var(--accent-color);
+  box-shadow: 5px 9px 14px 0px #1c1c1c;
+  background: var(--inner-background);
 }
 .fight_item label {
   width: 100%;
   padding: 0.5em;
-  border: 2px solid var(--gray-text-color);
+  border: 1px solid transparent;
   border-radius: 4px;
 }
-.fight_item label:hover {
-	border: 2px solid var(--text-color);
+.fight_item label:hover {  
+  border: 1px solid var(--gray-text-color);
+  box-shadow: 5px 9px 14px 0px #1c1c1c;
 }
 .fight_dur {
   margin-left: 1em;
@@ -117,11 +128,39 @@ input[type=text]:focus {
 }
 
 .players_box {
-  flex-grow: 1;
+  flex-grow: 2;
   flex-shrink: 0;
   width: 35%;
 }
+.analysis_box {
+  display: flex;
+  padding-top: 0.5em;
+  column-gap: 0.5em;
+}
+.result_box {
+  padding: 0.5em;
+  border-radius: 4px;
+  flex-grow: 1;
+  width: 50%;
+  border: 1px solid transparent;
+}
+.result_box:hover, .result_box.better {
+  border: 1px solid var(--gray-text-color);
+  box-shadow: 5px 9px 14px 0px #1c1c1c;
+}
+.result_box.better {
+  background: var(--inner-background);
+}
 
+.result_box.worse {
+  
+}
+.result_text {
+  display: block;
+}
+.result_title {
+  display: block;
+}
 .loading_anim {
   display: inline-block;
   position: relative;
@@ -157,3 +196,4 @@ input[type=text]:focus {
     transform: rotate(360deg);
   }
 }
+
