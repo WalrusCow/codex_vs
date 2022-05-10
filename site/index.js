@@ -115,6 +115,8 @@ function PlayerAnalysis(props) {
   }, /*#__PURE__*/React.createElement("div", {
     class: `result_box ${codex_best ? "better" : "worse"}`
   }, /*#__PURE__*/React.createElement("div", {
+    class: "ribbon"
+  }, /*#__PURE__*/React.createElement("span", null, '\u2605')), /*#__PURE__*/React.createElement("div", {
     class: "result_title"
   }, /*#__PURE__*/React.createElement("a", {
     href: `${codex_link}`,
@@ -128,6 +130,8 @@ function PlayerAnalysis(props) {
   }, "Damage: ", shortNumber(props.analysis.codex_dmg)))), /*#__PURE__*/React.createElement("div", {
     class: `result_box ${!codex_best ? "better" : "worse"}`
   }, /*#__PURE__*/React.createElement("div", {
+    class: "ribbon"
+  }, /*#__PURE__*/React.createElement("span", null, '\u2605')), /*#__PURE__*/React.createElement("div", {
     class: "result_title"
   }, /*#__PURE__*/React.createElement("a", {
     href: `${decanter_link}`,

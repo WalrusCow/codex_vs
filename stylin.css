@@ -8,6 +8,8 @@
   --background-color: #282a36;
   --orange-color: #ffb86c;
   --blue-color: #8be9fd;
+  --green-color: #50fa7b;
+  --red-color: #ff5555;
   background: var(--background-color);
   color: var(--text-color);
 }
@@ -81,16 +83,9 @@ input[type=text]:focus {
 }
 
 .report_box {
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: 0.5em;
-  column-gap: 0.5em;
-  flex-direction: column;
 }
 
 .fights_box {
-  flex-grow: 1;
-  flex-shrink: 1;
 }
 .fight_list {
   display: flex;
@@ -120,6 +115,7 @@ input[type=text]:focus {
   padding: 0.5em;
   border: 1px solid transparent;
   border-radius: 4px;
+  cursor: pointer;
 }
 .fight_item label:hover {
   border: 1px solid var(--gray-text-color);
@@ -135,8 +131,6 @@ input[type=text]:focus {
 }
 
 .players_box {
-  flex-grow: 1;
-  flex-shrink: 0;
 }
 .analysis_box {
   display: flex;
@@ -145,11 +139,15 @@ input[type=text]:focus {
   row-gap: 0.5em;
   column-gap: 0.5em;
 }
+
 .result_box {
   padding: 0.5em;
   border-radius: 4px;
   flex-grow: 1;
   border: 1px solid transparent;
+  /* for ribbon */
+  overflow: clip;
+  position: relative;
 }
 .result_box:hover, .result_box.better {
   border: 1px solid var(--gray-text-color);
@@ -158,15 +156,36 @@ input[type=text]:focus {
 .result_box.better {
   background: var(--inner-background);
 }
-
 .result_box.worse {
-  
 }
 .result_text {
   display: block;
 }
 .result_title {
   display: block;
+}
+
+/* cool ribbon thing? */
+.ribbon {
+  position: absolute;
+  right: -1.5em;
+}
+.worse .ribbon {
+  display:none;
+}
+.ribbon span {
+  transform: rotate(45deg);
+  display: block;
+  box-shadow: 0 5px 10px rgba(0,0,0,.1);
+  text-shadow: 0 1px 1px #000);
+  width: 5em;
+  background-color: var(--green-color);
+  color: var(--inner-background);
+  text-align: center;
+}
+
+.loading {
+  padding: 0.5em;
 }
 .loading_anim {
   display: inline-block;
@@ -203,4 +222,3 @@ input[type=text]:focus {
     transform: rotate(360deg);
   }
 }
-

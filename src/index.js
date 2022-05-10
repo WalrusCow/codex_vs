@@ -113,6 +113,7 @@ function PlayerAnalysis(props) {
   return (
     <div class='analysis_box'>
       <div class={`result_box ${codex_best ? "better" : "worse"}`}>
+          <div class='ribbon'><span>{'\u2605'}</span></div>
           <div class='result_title'><a href={`${codex_link}`} target='_blank'>Codex</a></div>
           <div class='result_contents'>
           <span class='result_text'>DPS: {shortNumber(props.analysis.codex_dps)}</span>
@@ -120,6 +121,7 @@ function PlayerAnalysis(props) {
         </div>
       </div>
       <div class={`result_box ${!codex_best ? "better" : "worse"}`}>
+        <div class='ribbon'><span>{'\u2605'}</span></div>
         <div class='result_title'><a href={`${decanter_link}`} target='_blank'>Decanter</a> (estimated)</div>
         <div class='result_contents'>
           <span class='result_text'>DPS: {shortNumber(decanter_dps)}</span>
