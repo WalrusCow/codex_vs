@@ -56,7 +56,7 @@ async function query_all_events(auth_token, report_id, fight, event_type, player
 
   let events = [];
   let query_start = fight.startTime;
-  while (query_start) {
+  while (query_start !== null) {
     const res = await wcl_query(auth_token, query, {
       report_id: report_id,
       fight_id: fight.id,
