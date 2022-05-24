@@ -307,7 +307,7 @@ class CodexApp extends React.Component {
     });
 
     let fights = await wcl.list_fights(this.props.auth_token, report_id);
-    fights = fights.filter((f) => f.keystoneLevel);
+    fights = fights.filter((f) => f.keystoneLevel || f.encounterID);
     this.setState({
       fights: fights,
     });

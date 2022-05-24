@@ -88,7 +88,8 @@ async function list_fights(auth_token, report_id) {
            id,
            keystoneLevel,
            name,
-           startTime,
+           encounterID,
+           difficulty,
            dungeonPulls {
              startTime,
              endTime,

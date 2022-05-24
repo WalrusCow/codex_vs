@@ -193,8 +193,12 @@ async function analyze_player(auth_token, report_id, fight, player) {
 
   let combat_time = 0;
 
-  for (const pull of fight.dungeonPulls) {
-    combat_time += pull.endTime - pull.startTime;
+  if (fight.dungeonPulls) {
+    for (const pull of fight.dungeonPulls) {
+      combat_time += pull.endTime - pull.startTime;
+    }
+  } else {
+    combat_time = fight.endTime - fight.startTime;
   }
 
   const codex_dps = codex_dmg / (combat_time / 1000);
