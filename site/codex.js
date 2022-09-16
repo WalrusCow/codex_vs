@@ -156,7 +156,7 @@ async function analyze_player(auth_token, report_id, fight, player) {
 
   if (!player.combat_info.gear.find(g => g.id == codex_id)) {
     // So far only works for people wearing a codex
-    await sim_codex(auth_token, report_id, fight, player);
+    return await sim_codex(auth_token, report_id, fight, player);
   } else {
     //await sim_codex(auth_token, report_id, fight, player);
     return await analyze_codex(auth_token, report_id, fight, player);
