@@ -107,7 +107,6 @@ function PlayerAnalysis(props) {
 
     return num;
   } // TODO: Add a little hover ? thing to explain the stuff
-  // TODO: Add a little corner banner maybe for which is best to make it more obvious?
 
 
   return /*#__PURE__*/React.createElement("div", {
@@ -140,9 +139,9 @@ function PlayerAnalysis(props) {
     class: "result_contents"
   }, /*#__PURE__*/React.createElement("span", {
     class: "result_text"
-  }, "DPS: ", shortNumber(decanter_dps)), /*#__PURE__*/React.createElement("span", {
+  }, "DPS: ", shortNumber(decanter_dps), " (", shortNumber(props.analysis.str_dps), " from str)"), /*#__PURE__*/React.createElement("span", {
     class: "result_text"
-  }, "Damage: ", shortNumber(decanter_dmg)))));
+  }, "Damage: ", shortNumber(decanter_dmg), " (", shortNumber(props.analysis.str_dmg), " from str)"))));
 }
 
 function PlayerCard(props) {

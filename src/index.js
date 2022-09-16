@@ -109,7 +109,6 @@ function PlayerAnalysis(props) {
     return num;
   }
   // TODO: Add a little hover ? thing to explain the stuff
-  // TODO: Add a little corner banner maybe for which is best to make it more obvious?
   return (
     <div class='analysis_box'>
       <div class={`result_box ${codex_best ? "better" : "worse"}`}>
@@ -124,8 +123,12 @@ function PlayerAnalysis(props) {
         <div class='ribbon'><span>{'\u2605'}</span></div>
         <div class='result_title'><a href={`${decanter_link}`} target='_blank'>Decanter</a> (estimated)</div>
         <div class='result_contents'>
-          <span class='result_text'>DPS: {shortNumber(decanter_dps)}</span>
-          <span class='result_text'>Damage: {shortNumber(decanter_dmg)}</span>
+          <span class='result_text'>
+            DPS: {shortNumber(decanter_dps)} ({shortNumber(props.analysis.str_dps)} from str)
+          </span>
+          <span class='result_text'>
+            Damage: {shortNumber(decanter_dmg)} ({shortNumber(props.analysis.str_dmg)} from str)
+          </span>
         </div>
       </div>
     </div>

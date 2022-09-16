@@ -4,8 +4,39 @@ import * as buffs from './buffs.js';
 import * as wcl from './wcl.js';
 const codex_id = 185836;
 const codex_attack = 351450;
-const passive_trinket_dps = 360;
-const trinket_str_278 = 125;
+const passive_trinket_dps = 400;
+const trinket_str = 151;
+
+function apply_dr(pct) {
+  const dr_pcts = [[126, 1], [66, .5], [54, .4], [47, .3], [39, .2], [30, .1], [0, 0]];
+  let result = 0;
+
+  for (const [min_pct, rate] of dr_pcts) {
+    if (pct > min_pct) {
+      result += (pct - min_pct) * (1 - rate);
+      pct = min_pct;
+    }
+  }
+
+  return result;
+}
+
+class Secondary {
+  constructor(name, rating) {
+    this.name = name;
+    this.rating = rating;
+  }
+
+  get_pct(stat) {
+    return apply_dr(stat / this.rating) / 100;
+  }
+
+}
+
+const HASTE = new Secondary("haste", 33);
+const MASTERY = new Secondary("mastery", 17.5 / 2);
+const VERS = new Secondary("vers", 40);
+const CRIT = new Secondary("crit", 35);
 
 class Aura {
   constructor(buff, stacks = 1) {
@@ -102,7 +133,7 @@ class PlayerState {
 async function get_combat_events(auth_token, report_id, fight, player) {
   let events = [];
 
-  for (const type of ['DamageDone', 'Buffs', 'Casts']) {
+  for (const type of ['DamageDone', 'DamageTaken', 'Buffs', 'Casts']) {
     events = events.concat(await wcl.query_all_events(auth_token, report_id, fight, type, player.id));
   }
 
@@ -125,11 +156,152 @@ async function analyze_player(auth_token, report_id, fight, player) {
 
   if (!player.combat_info.gear.find(g => g.id == codex_id)) {
     // So far only works for people wearing a codex
-    return {
-      error: 'Not wearing Codex'
-    };
+    return await sim_codex(auth_token, report_id, fight, player);
+  } else {
+    await sim_codex(auth_token, report_id, fight, player);
+    return await analyze_codex(auth_token, report_id, fight, player);
+  }
+}
+
+async function sim_codex(auth_token, report_id, fight, player) {
+  let player_state = new PlayerState(player);
+  let latest_ap = player_state.get_ap(); //return {
+  //error: 'Not wearing Codex',
+  //};
+  // TODO: Check what trinket we're competing with and subtract its damage effect?
+
+  let crit = CRIT.get_pct(player.combat_info.critMelee) + 0.05;
+  let haste = HASTE.get_pct(player.combat_info.hasteMelee);
+  let vers = VERS.get_pct(player.combat_info.versatilityDamageDone);
+  console.log(`crit is ${crit} haste is ${haste} vers is ${vers}`);
+  let combat_events = await get_combat_events(auth_token, report_id, fight, player);
+  let expected_codex_dmg = 0;
+  let lost_str_dmg = 0; // spell data claims this is hasted, but it doesn't seem to be
+
+  let rppm = 2.5; // * (1 + haste);
+
+  const codex_duration = 12;
+  let time_since_trigger = 3.5;
+  let last_trigger_time = 0;
+  let trigger_events = [];
+  let total_dmg_taken = 0;
+
+  for (var e of combat_events) {
+    if (e.type == 'applybuff' || e.type == 'applybuffstack') {
+      const aura = aura_from_buff_event(e);
+
+      if (!aura) {
+        continue;
+      }
+
+      if (aura.abilityGameId == 342181 && player_state.get_aura(aura)) {
+        // Lead by Example has a special case where it doesn't have true stacks
+        // infer "stacks" based on how many allies it affected
+        player_state.get_aura(aura).stacks += 1;
+        continue;
+      }
+
+      if (e.targetID != player.id) {
+        continue;
+      }
+
+      player_state.add_aura(aura);
+    } else if (e.type == 'removebuff') {
+      // only if player is the target
+      if (e.targetID == player.id) {
+        player_state.remove_aura(aura_from_buff_event(e));
+      }
+    } else if (e.type == 'damage') {
+      const damage_done = e.amount + (e.absorbed || 0);
+
+      if (damage_done === undefined || damage_done == null) {
+        debugger;
+      }
+
+      if (e.targetID == player.id) {
+        if (damage_done == 0) continue; // damage taken
+
+        total_dmg_taken += damage_done;
+        let time_since_trigger = (e.timestamp - last_trigger_time) / 1000;
+        last_trigger_time = e.timestamp;
+        console.log(`Time since trigger ${time_since_trigger}`); // https://gist.github.com/Dorovon/74c4fcf49ae799d92066b3266dcdcebc
+        // TODO: +13.1% for bad luck protection (on avg?) is that right?
+
+        let proc_chance = rppm * Math.min(3.5, time_since_trigger) / 60 * 1.131;
+
+        while (trigger_events.length > 0 && trigger_events[0].t < e.timestamp - codex_duration * 1000) {
+          // Pop this event off since it's not in the uptime window
+          trigger_events.shift();
+        } // Chance it ever triggered is 1 - chance it never triggered
+
+
+        let active_chance = 1;
+
+        for (var te of trigger_events) {
+          active_chance *= 1 - te.rate;
+        }
+
+        active_chance = 1 - active_chance;
+        console.log(`Active chance is ${active_chance}, proc chance is ${proc_chance}, together ${active_chance + proc_chance}`);
+        let expected_dmg_here = damage_done / 10 * (1 + vers) * (1 + crit) * active_chance; // Does not reflect on the triggering event itself
+
+        trigger_events.push({
+          rate: proc_chance,
+          t: e.timestamp
+        });
+        expected_codex_dmg += expected_dmg_here;
+      } else {
+        // damage done
+        if (e.abilityGameID == codex_attack) {//codex_dmg += damage_done;
+        } else if (buffs.ap_abilities.find(x => x == e.abilityGameID)) {
+          // this is an attack that scales from player AP
+          const dmg_coeff = damage_done / latest_ap;
+          const ap_coeff = latest_ap / player_state.get_ap();
+          player_state.base_str -= trinket_str;
+          const new_dmg = player_state.get_ap() * ap_coeff * dmg_coeff;
+          player_state.base_str += trinket_str;
+
+          if (new_dmg > damage_done) {
+            console.log('Less strength is more damage?');
+            debugger;
+          }
+
+          lost_str_dmg += damage_done - new_dmg;
+        }
+      } // else uninteresting spell
+
+    } else if (e.type == 'cast' && (e.attackPower || 0) > 0) {
+      latest_ap = e.attackPower;
+    }
   }
 
+  let combat_time = 0;
+
+  if (fight.dungeonPulls) {
+    for (const pull of fight.dungeonPulls) {
+      combat_time += pull.endTime - pull.startTime;
+    }
+  } else {
+    combat_time = fight.endTime - fight.startTime;
+  }
+
+  const codex_dps = expected_codex_dmg / (combat_time / 1000);
+  const str_dps = lost_str_dmg / (combat_time / 1000);
+  console.log(`codex ps ${codex_dps} dmg ${expected_codex_dmg}  str ${str_dps} takenb ${total_dmg_taken}`);
+  return {
+    error: 'fuck off lol'
+  };
+  return {
+    //codex_dmg: codex_dmg,
+    //codex_dps: codex_dps,
+    str_dmg: added_str_dmg,
+    str_dps: str_dps,
+    trinket_dmg: passive_trinket_dps * (combat_time / 1000),
+    trinket_dps: passive_trinket_dps
+  };
+}
+
+async function analyze_codex(auth_token, report_id, fight, player) {
   let player_state = new PlayerState(player);
   let combat_events = await get_combat_events(auth_token, report_id, fight, player);
   let latest_ap = player_state.get_ap();
@@ -174,9 +346,9 @@ async function analyze_player(auth_token, report_id, fight, player) {
         // this is an attack that scales from player AP
         const dmg_coeff = damage_done / latest_ap;
         const ap_coeff = latest_ap / player_state.get_ap();
-        player_state.base_str += trinket_str_278;
+        player_state.base_str += trinket_str;
         const new_dmg = player_state.get_ap() * ap_coeff * dmg_coeff;
-        player_state.base_str -= trinket_str_278;
+        player_state.base_str -= trinket_str;
 
         if (new_dmg < damage_done) {
           console.log('More strength is less damage?');
@@ -227,33 +399,3 @@ async function analyze_players(auth_token, report_id, fight, players) {
 
 export { analyze_players }; // TODO: food for thought.. are there background JS worker things we can take
 // advantage of to do this heavy lifting?
-//
-// TODO: We don't really want this exactly. probably we just want to show every
-// player and then under them show the stats about codex (yes, this)
-//
-// so this function should be 2 parts.. one to actually call list_players from
-// python impl. then after we fetch combatantinfo and merge it together into one
-// unseemly beast
-//
-// then separately we'll have a stateful class constructed from that data
-// that will be used to process the events
-//  class Player // name, is_codex, player_id, server, etc
-//  class PlayerAnalyzer // Player, combat_events -> getCodexStats
-//
-// to start with, the stats will be "not wearing codex"
-// in the future, "simulated codex dps" will be a part of it too
-//
-// if wearing codex
-//  Strength dps (damage) (estimated)
-//  Codex dps (damage)
-//  Passive trinket dps (benchmark, not actual data)
-//  Verdict: WORTH / NOT WORTH
-// or, if not wearing codex
-//  Strength dps (damage)
-//  Codex dps (damage) (estimated)
-//  Trinket dps (benchmark, not actual data)
-//  Verdict: WORTH / NOT WORTH
-// TODO: eventually also consider
-//  what if I upgraded codex?
-//  did codex save life?
-//  select trinket ilvl
