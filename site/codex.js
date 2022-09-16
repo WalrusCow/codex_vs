@@ -158,7 +158,7 @@ async function analyze_player(auth_token, report_id, fight, player) {
     // So far only works for people wearing a codex
     return await sim_codex(auth_token, report_id, fight, player);
   } else {
-    //await sim_codex(auth_token, report_id, fight, player);
+    await sim_codex(auth_token, report_id, fight, player);
     return await analyze_codex(auth_token, report_id, fight, player);
   }
 }
@@ -179,8 +179,7 @@ async function sim_codex(auth_token, report_id, fight, player) {
   let expected_codex_dmg = 0;
   let lost_str_dmg = 0; // spell data claims this is hasted, but it doesn't seem to be
 
-  let rppm = 2.5; // * (1 + haste);
-
+  let rppm = 2.5 * (1 + haste);
   const codex_duration = 12;
   let time_since_trigger = 3.5;
   let last_trigger_time = 0;

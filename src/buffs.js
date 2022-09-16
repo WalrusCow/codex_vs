@@ -113,6 +113,12 @@ const buff_list = [
     spell_id: 357972,
     base_coeff: 0.038, //TODO: How to deal with ilvl?
   }),
+  new Buff({
+    type: 'add',
+    name: 'Boon of the End',
+    spell_id: 368697,
+    base_coeff: 684,
+  }),
 ];
 let str_buffs = {};
 for (const b of buff_list) {
