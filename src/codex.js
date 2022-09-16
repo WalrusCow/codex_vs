@@ -149,20 +149,21 @@ async function analyze_player(auth_token, report_id, fight, player) {
 
   if (!player.combat_info.gear.find((g) => g.id == codex_id)) {
     // So far only works for people wearing a codex
-    return await sim_codex(auth_token, report_id, fight, player);
-  } else {
     await sim_codex(auth_token, report_id, fight, player);
+  } else {
+    //await sim_codex(auth_token, report_id, fight, player);
     return await analyze_codex(auth_token, report_id, fight, player);
   }
 }
 
 async function sim_codex(auth_token, report_id, fight, player) {
+  // Not finished yet
+  return {
+    error: 'Not wearing Codex',
+  };
   let player_state = new PlayerState(player);
   let latest_ap = player_state.get_ap();
 
-  //return {
-    //error: 'Not wearing Codex',
-  //};
 
   // TODO: Check what trinket we're competing with and subtract its damage effect?
   let crit = CRIT.get_pct(player.combat_info.critMelee) + 0.05;

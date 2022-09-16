@@ -15,6 +15,11 @@ const short_dungeon_names = {
   "Tazavesh: Streets of Wonder": "Streets",
   "The Necrotic Wake": "Necrotic Wake",
   "Theater of Pain": "Theater",
+  "Operation: Mechagon - Workshop": "Workshop",
+  "Operation: Mechagon - Junkyard": "Junkyard",
+  "Lower Karazhan": "Lower Kara",
+  "Upper Karazhan": "Upper Kara",
+  "Grimrail Depot": "Grimrail",
 };
 
 function parse_report_url(url) {
@@ -89,15 +94,15 @@ function PlayerAnalysis(props) {
     return <div>{props.analysis.error}</div>;
   }
 
-  const decanter_dps = props.analysis.str_dps + props.analysis.trinket_dps;
-  const decanter_dmg = props.analysis.str_dmg + props.analysis.trinket_dmg;
+  const dmg_trinket_dps = props.analysis.str_dps + props.analysis.trinket_dps;
+  const dmg_trinket_dmg = props.analysis.str_dmg + props.analysis.trinket_dmg;
 
-  const dps_diff = decanter_dps - props.analysis.codex_dps;
+  const dps_diff = dmg_trinket_dps - props.analysis.codex_dps;
   const codex_best = dps_diff < 0;
   const is_close = Math.abs(dps_diff) < (props.analysis.trinket_dps * 0.1);
 
-  const codex_link = 'https://www.wowhead.com/item=185836/codex-of-the-first-technique?bonus=6536:5968';
-  const decanter_link = 'https://www.wowhead.com/item=178861/decanter-of-anima-charged-winds?bonus=6536:5965&class=6&spec=250';
+  const codex_link = 'https://www.wowhead.com/item=185836/codex-of-the-first-technique?bonus=8765:7359:6652:8270:1615:6646';
+  const dmg_trinket_link = 'https://www.wowhead.com/item=169769/remote-guidance-device?bonus=3149:4777:8270:7359';
 
   function shortNumber(num) {
     num = Math.round(num);
@@ -121,13 +126,13 @@ function PlayerAnalysis(props) {
       </div>
       <div class={`result_box ${!codex_best ? "better" : "worse"}`}>
         <div class='ribbon'><span>{'\u2605'}</span></div>
-        <div class='result_title'><a href={`${decanter_link}`} target='_blank'>Decanter</a> (estimated)</div>
+        <div class='result_title'><a href={`${dmg_trinket_link}`} target='_blank'>Remote Guidance Device</a> (estimated)</div>
         <div class='result_contents'>
           <span class='result_text'>
-            DPS: {shortNumber(decanter_dps)} ({shortNumber(props.analysis.str_dps)} from str)
+            DPS: {shortNumber(dmg_trinket_dps)} ({shortNumber(props.analysis.str_dps)} from str)
           </span>
           <span class='result_text'>
-            Damage: {shortNumber(decanter_dmg)} ({shortNumber(props.analysis.str_dmg)} from str)
+            Damage: {shortNumber(dmg_trinket_dmg)} ({shortNumber(props.analysis.str_dmg)} from str)
           </span>
         </div>
       </div>
@@ -215,8 +220,8 @@ class CodexApp extends React.Component {
   }
 
   render() {
-    // what to do here? well, I guess we can now get the latest reports even.
-    // for now, let's just render a text box I guess?
+    // I guess we can now get the latest reports maybe?
+    // for now, let's just render a text box to paste a link
     let fights_list = null;
     if (this.state.fights) {
       fights_list = <FightList
@@ -269,7 +274,6 @@ class CodexApp extends React.Component {
       return s;
     });
 
-    // TODO: Or split this per player already? maybe better out here yeah
     const analysis = await codex.analyze_players(
       this.props.auth_token,
       this.state.report_id,
@@ -356,6 +360,7 @@ class AppRoot extends React.Component {
       // the state is "getting_token"
       contents = 'Waiting for token from WCL';
     } else {
+      // auth succeeded
       contents = <CodexApp auth_token={this.state.auth_token} />;
     }
     return (
